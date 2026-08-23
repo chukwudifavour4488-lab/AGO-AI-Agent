@@ -1,7 +1,7 @@
 {
   "name": "Ago Lite - AI Shopping & Social Marketplace",
   "description": "Africa's social commerce, chat, and escrow marketplace super app powered by Google Gemini AI.",
-  "requestFramePermissions": ["microphone"],
+  "requestFramePermissions": ["microphone", "camera"],
   "majorCapabilities": [
     "MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"
   ]
