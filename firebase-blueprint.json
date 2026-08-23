@@ -1,0 +1,148 @@
+{
+  "entities": {
+    "products": {
+      "title": "Products",
+      "description": "Marketplace products including live inventory and scraped products",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "title": { "type": "string" },
+        "price": { "type": "number" },
+        "priceFormatted": { "type": "string" },
+        "originalPrice": { "type": "number" },
+        "originalPriceFormatted": { "type": "string" },
+        "city": { "type": "string" },
+        "locationArea": { "type": "string" },
+        "category": { "type": "string" },
+        "image": { "type": "string" },
+        "rating": { "type": "number" },
+        "reviewsCount": { "type": "number" },
+        "condition": { "type": "string" },
+        "description": { "type": "string" },
+        "specs": { "type": "array", "items": { "type": "string" } },
+        "inStock": { "type": "boolean" },
+        "sourceUrl": { "type": "string" },
+        "scrapedAt": { "type": "string" },
+        "scrapedVia": { "type": "string" },
+        "seller": {
+          "type": "object",
+          "properties": {
+            "id": { "type": "string" },
+            "name": { "type": "string" },
+            "handle": { "type": "string" },
+            "avatar": { "type": "string" },
+            "verified": { "type": "boolean" },
+            "city": { "type": "string" },
+            "rating": { "type": "number" },
+            "responseTime": { "type": "string" }
+          }
+        }
+      },
+      "required": ["title", "price", "city", "category", "image"]
+    },
+    "users": {
+      "title": "Users",
+      "description": "User profiles, merchant accounts, and creator followers",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "name": { "type": "string" },
+        "handle": { "type": "string" },
+        "phoneNumber": { "type": "string" },
+        "email": { "type": "string" },
+        "city": { "type": "string" },
+        "avatar": { "type": "string" },
+        "role": { "type": "string" },
+        "verified": { "type": "boolean" },
+        "status": { "type": "string" },
+        "followersCount": { "type": "number" },
+        "viewsCount": { "type": "number" }
+      }
+    },
+    "posts": {
+      "title": "Shoppable Posts",
+      "description": "Social feed posts with shoppable product tags, likes, and comments",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "creator": { "type": "object" },
+        "mediaUrl": { "type": "string" },
+        "mediaType": { "type": "string" },
+        "caption": { "type": "string" },
+        "likes": { "type": "number" },
+        "comments": { "type": "number" },
+        "shares": { "type": "number" },
+        "audioTitle": { "type": "string" },
+        "productTagged": { "type": "object" }
+      }
+    },
+    "chats": {
+      "title": "Direct Chats",
+      "description": "1-on-1 direct messaging threads between buyers and sellers",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "seller": { "type": "object" },
+        "lastMessage": { "type": "string" },
+        "lastMessageTime": { "type": "string" },
+        "unreadCount": { "type": "number" },
+        "messages": { "type": "array" }
+      }
+    },
+    "orders": {
+      "title": "Orders",
+      "description": "Marketplace purchase orders with escrow protection and status pending",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "orderNumber": { "type": "string" },
+        "status": { "type": "string" },
+        "totalAmount": { "type": "number" },
+        "shipping": { "type": "object" },
+        "paymentMethod": { "type": "string" },
+        "createdAt": { "type": "string" }
+      }
+    },
+    "gifts": {
+      "title": "Creator Gifts",
+      "description": "Live virtual gifts sent to creators backed by Paystack transactions",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "creatorHandle": { "type": "string" },
+        "giftId": { "type": "string" },
+        "giftName": { "type": "string" },
+        "amount": { "type": "number" },
+        "coins": { "type": "number" },
+        "status": { "type": "string" },
+        "createdAt": { "type": "string" }
+      }
+    }
+  },
+  "firestore": {
+    "/products/{productId}": {
+      "schema": "products",
+      "description": "Marketplace catalog products"
+    },
+    "/users/{userId}": {
+      "schema": "users",
+      "description": "User profiles and follower counts"
+    },
+    "/posts/{postId}": {
+      "schema": "posts",
+      "description": "Shoppable feed posts and interactions"
+    },
+    "/chats/{chatId}": {
+      "schema": "chats",
+      "description": "1-on-1 direct seller chat threads"
+    },
+    "/orders/{orderId}": {
+      "schema": "orders",
+      "description": "Customer marketplace orders with pending status"
+    },
+    "/gifts/{giftId}": {
+      "schema": "gifts",
+      "description": "Creator gifts and monetization logs"
+    }
+  }
+}
