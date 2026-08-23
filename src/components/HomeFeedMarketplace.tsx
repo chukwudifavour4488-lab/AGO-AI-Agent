@@ -20,7 +20,7 @@ import {
   PlusCircle,
   UploadCloud,
 } from 'lucide-react';
-import { Product, FeedPost, NigerianCity } from '../types';
+import { Product, FeedPost, NigerianCity, UserAccount } from '../types';
 import { UploadProductModal } from './UploadProductModal';
 import { togglePostLikeInFirestore, addPostCommentToFirestore } from '../lib/firebaseService';
 
@@ -28,11 +28,13 @@ interface HomeFeedMarketplaceProps {
   products: Product[];
   feedPosts: FeedPost[];
   selectedCity: NigerianCity;
+  currentUser?: UserAccount | null;
   onSelectProduct: (product: Product) => void;
   onChatSeller: (product: Product) => void;
   onBuyNow: (product: Product) => void;
   onOpenAiChatWithPrompt: (prompt: string) => void;
   onOpenCreatorProfile: (creatorHandle: string) => void;
+  onOpenEscrowOrder?: (product: Product) => void;
   onAddScrapedProduct?: (product: Product) => void;
   onSyncFirecrawl?: () => Promise<void>;
 }
@@ -41,11 +43,13 @@ export const HomeFeedMarketplace: React.FC<HomeFeedMarketplaceProps> = ({
   products,
   feedPosts,
   selectedCity,
+  currentUser,
   onSelectProduct,
   onChatSeller,
   onBuyNow,
   onOpenAiChatWithPrompt,
   onOpenCreatorProfile,
+  onOpenEscrowOrder,
   onAddScrapedProduct,
   onSyncFirecrawl,
 }) => {
@@ -234,6 +238,8 @@ export const HomeFeedMarketplace: React.FC<HomeFeedMarketplaceProps> = ({
     showToast('💬 Comment added to post in Firestore!');
   };
 
+  const firstName = currentUser?.name ? currentUser.name.split(' ')[0] : 'Favour';
+
   return (
     <div className="pb-24 max-w-6xl mx-auto px-3 sm:px-4 pt-3">
       {/* Toast Notification */}
@@ -243,6 +249,44 @@ export const HomeFeedMarketplace: React.FC<HomeFeedMarketplaceProps> = ({
           <span>{toastMessage}</span>
         </div>
       )}
+
+      {/* Personalized Welcome Banner ("Hi Favour") */}
+      <div className="mb-3 p-3 sm:p-4 rounded-2xl bg-gradient-to-r from-slate-900 via-teal-950/30 to-slate-900 border border-teal-500/30 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 shadow-xl">
+        <div className="flex items-center gap-3">
+          <div className="relative">
+            <img
+              src={currentUser?.avatar || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=300&auto=format&fit=crop&q=80'}
+              alt={currentUser?.name || 'User'}
+              referrerPolicy="no-referrer"
+              className="w-11 h-11 rounded-full object-cover ring-2 ring-teal-400"
+            />
+            <span className="absolute -bottom-0.5 -right-0.5 w-3.5 h-3.5 rounded-full bg-emerald-400 border-2 border-slate-900" />
+          </div>
+          <div>
+            <div className="flex items-center gap-2">
+              <h2 className="text-base sm:text-lg font-black text-white">
+                Hi {firstName} 👋
+              </h2>
+              <span className="px-2 py-0.5 rounded-full bg-teal-500/10 border border-teal-500/30 text-teal-300 text-[10px] font-bold">
+                🛡️ Escrow Protected
+              </span>
+            </div>
+            <p className="text-xs text-slate-300">
+              Welcome to Ago Lite • Shopping verified African goods in <strong className="text-teal-300">{selectedCity}</strong>
+            </p>
+          </div>
+        </div>
+
+        <div className="flex items-center gap-2 self-end sm:self-center">
+          <button
+            onClick={() => onOpenAiChatWithPrompt(`Find best bargains in ${selectedCity} with escrow protection`)}
+            className="px-3 py-1.5 rounded-xl bg-gradient-to-r from-teal-400 to-cyan-500 hover:from-teal-300 hover:to-cyan-400 text-slate-950 font-extrabold text-xs flex items-center gap-1.5 shadow-md shadow-teal-500/20 transition cursor-pointer"
+          >
+            <Sparkles className="w-3.5 h-3.5" />
+            <span>AI Bargain Finder</span>
+          </button>
+        </div>
+      </div>
 
       {/* Integration Live Status Badges Banner */}
       <div className="mb-3 flex flex-wrap items-center justify-between gap-2 p-2.5 rounded-xl bg-slate-900/90 border border-slate-800 text-[11px]">
@@ -554,11 +598,22 @@ export const HomeFeedMarketplace: React.FC<HomeFeedMarketplaceProps> = ({
                       </div>
 
                       {/* Escrow Protected Badge */}
-                      <div className="mt-1 mb-2.5 flex items-center">
-                        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-emerald-950/80 border border-emerald-500/40 text-emerald-400 text-[11px] sm:text-xs font-semibold leading-tight tracking-tight shadow-sm">
+                      <div className="mt-1 mb-2.5 flex items-center justify-between">
+                        <span
+                          onClick={() => onOpenEscrowOrder && onOpenEscrowOrder(product)}
+                          className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-emerald-950/80 hover:bg-emerald-900/80 border border-emerald-500/40 text-emerald-400 text-[11px] sm:text-xs font-semibold leading-tight tracking-tight shadow-sm cursor-pointer transition"
+                        >
                           <ShieldCheck className="w-3 h-3 text-emerald-400 shrink-0" />
                           <span>AGO Escrow Protected</span>
                         </span>
+                        {onOpenEscrowOrder && (
+                          <span
+                            onClick={() => onOpenEscrowOrder(product)}
+                            className="text-[10px] text-teal-400 font-bold hover:underline cursor-pointer"
+                          >
+                            Escrow Room →
+                          </span>
+                        )}
                       </div>
 
                       {/* Action Buttons */}

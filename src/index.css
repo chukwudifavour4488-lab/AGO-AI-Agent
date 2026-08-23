@@ -11,3 +11,95 @@
     scrollbar-width: none;  /* Firefox */
   }
 }
+
+/* ========================================================================= */
+/* LIGHT MODE THEME OVERRIDES                                                */
+/* ========================================================================= */
+body.theme-light {
+  background-color: #f8fafc;
+  color: #0f172a;
+}
+
+.theme-light {
+  color-scheme: light;
+}
+
+.theme-light .bg-slate-950 {
+  background-color: #f8fafc !important;
+}
+
+.theme-light .bg-slate-900 {
+  background-color: #ffffff !important;
+}
+
+.theme-light .bg-slate-900\/95,
+.theme-light .bg-slate-900\/90,
+.theme-light .bg-slate-900\/80,
+.theme-light .bg-slate-950\/95,
+.theme-light .bg-slate-950\/80,
+.theme-light .bg-slate-950\/70,
+.theme-light .bg-slate-950\/60 {
+  background-color: rgba(255, 255, 255, 0.95) !important;
+}
+
+.theme-light .bg-slate-850,
+.theme-light .bg-slate-800 {
+  background-color: #f1f5f9 !important;
+}
+
+.theme-light .hover\:bg-slate-800:hover,
+.theme-light .hover\:bg-slate-850:hover,
+.theme-light .hover\:bg-slate-900:hover {
+  background-color: #e2e8f0 !important;
+}
+
+.theme-light .hover\:bg-slate-700:hover {
+  background-color: #cbd5e1 !important;
+}
+
+.theme-light .border-slate-800,
+.theme-light .border-slate-800\/80,
+.theme-light .border-slate-800\/60,
+.theme-light .border-slate-800\/50,
+.theme-light .border-slate-700,
+.theme-light .border-slate-700\/60 {
+  border-color: #e2e8f0 !important;
+}
+
+.theme-light .text-white {
+  color: #0f172a !important;
+}
+
+.theme-light .text-slate-100,
+.theme-light .text-slate-200 {
+  color: #1e293b !important;
+}
+
+.theme-light .text-slate-300 {
+  color: #334155 !important;
+}
+
+.theme-light .text-slate-400 {
+  color: #64748b !important;
+}
+
+.theme-light .text-slate-500 {
+  color: #94a3b8 !important;
+}
+
+.theme-light input,
+.theme-light textarea,
+.theme-light select {
+  background-color: #ffffff !important;
+  color: #0f172a !important;
+  border-color: #cbd5e1 !important;
+}
+
+.theme-light input::placeholder,
+.theme-light textarea::placeholder {
+  color: #94a3b8 !important;
+}
+
+.theme-light .shadow-2xl {
+  box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.08), 0 8px 10px -6px rgba(0, 0, 0, 0.04) !important;
+}

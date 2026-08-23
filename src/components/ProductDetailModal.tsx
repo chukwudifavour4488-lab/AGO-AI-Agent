@@ -10,6 +10,7 @@ interface ProductDetailModalProps {
   onChatSeller: (product: Product) => void;
   onAskAiAboutProduct: (product: Product) => void;
   onOpenCreatorProfile: (creatorHandle: string) => void;
+  onOpenEscrowRoom?: (product: Product) => void;
 }
 
 export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
@@ -20,6 +21,7 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
   onChatSeller,
   onAskAiAboutProduct,
   onOpenCreatorProfile,
+  onOpenEscrowRoom,
 }) => {
   if (!product) return null;
 
@@ -321,6 +323,19 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
               <span>Add to Cart</span>
             </button>
           </div>
+
+          {onOpenEscrowRoom && (
+            <button
+              onClick={() => {
+                onClose();
+                onOpenEscrowRoom(product);
+              }}
+              className="w-full py-2.5 rounded-xl bg-teal-500/10 hover:bg-teal-500/20 border border-teal-500/40 text-teal-300 font-bold text-xs flex items-center justify-center gap-1.5 transition cursor-pointer"
+            >
+              <ShieldCheck className="w-4 h-4 text-teal-400" />
+              <span>Open in AGO Escrow Room (Protected Checkout & Vault)</span>
+            </button>
+          )}
 
           <button
             onClick={() => onChatSeller(product)}

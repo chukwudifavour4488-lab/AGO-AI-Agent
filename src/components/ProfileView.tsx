@@ -21,6 +21,9 @@ import {
   Layers,
   ArrowUpRight,
   X,
+  Sun,
+  Moon,
+  Palette,
 } from 'lucide-react';
 import { Product, UserAccount } from '../types';
 import { GiftModal } from './GiftModal';
@@ -35,9 +38,12 @@ import {
 interface ProfileViewProps {
   products: Product[];
   currentUser?: UserAccount | null;
+  currentTheme?: 'dark' | 'light';
+  onToggleTheme?: (theme: 'dark' | 'light') => void;
   onSelectProduct: (product: Product) => void;
   onChatWithBrand: (brandHandle: string) => void;
   onBuyNow: (product: Product) => void;
+  onOpenEscrowRoom?: (orderNumber?: string) => void;
   onOpenAdminPanel?: () => void;
   onLogout?: () => void;
 }
@@ -45,17 +51,33 @@ interface ProfileViewProps {
 export const ProfileView: React.FC<ProfileViewProps> = ({
   products,
   currentUser,
+  currentTheme = 'dark',
+  onToggleTheme,
   onSelectProduct,
   onChatWithBrand,
   onBuyNow,
+  onOpenEscrowRoom,
   onOpenAdminPanel,
   onLogout,
 }) => {
   const [isFollowing, setIsFollowing] = useState<boolean>(false);
   const [followerCount, setFollowerCount] = useState<number>(12400);
-  const [activeTab, setActiveTab] = useState<'products' | 'dashboard' | 'about'>('products');
+  const [activeTab, setActiveTab] = useState<'account' | 'products' | 'dashboard' | 'about'>('account');
   const [showGiftModal, setShowGiftModal] = useState<boolean>(false);
   const [showSettingsModal, setShowSettingsModal] = useState<boolean>(false);
+  const [theme, setTheme] = useState<'dark' | 'light'>(currentTheme);
+
+  // Sync internal theme with prop if prop updates
+  useEffect(() => {
+    setTheme(currentTheme);
+  }, [currentTheme]);
+
+  const handleThemeChange = (newTheme: 'dark' | 'light') => {
+    setTheme(newTheme);
+    if (onToggleTheme) {
+      onToggleTheme(newTheme);
+    }
+  };
 
   // Real data from Firestore
   const [firestoreGifts, setFirestoreGifts] = useState<GiftDocument[]>([]);
@@ -122,29 +144,44 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
           />
           <div className="absolute inset-0 bg-gradient-to-b from-slate-900/30 via-slate-900/60 to-slate-900" />
 
-          {/* Settings / Logout Trigger on top right */}
-          <button
-            onClick={() => setShowSettingsModal(true)}
-            className="absolute top-4 right-4 z-20 p-2 rounded-full bg-slate-900/80 backdrop-blur-md border border-slate-700 text-slate-300 hover:text-white transition shadow-lg cursor-pointer"
-            title="Settings & Account"
-          >
-            <Settings className="w-4 h-4" />
-          </button>
+          {/* Quick Theme Toggle & Settings on top right */}
+          <div className="absolute top-4 right-4 z-20 flex items-center gap-2">
+            <button
+              onClick={() => handleThemeChange(theme === 'dark' ? 'light' : 'dark')}
+              className="p-2 rounded-full bg-slate-900/80 backdrop-blur-md border border-slate-700 text-slate-300 hover:text-teal-300 transition shadow-lg cursor-pointer flex items-center justify-center"
+              title={theme === 'dark' ? 'Switch to Light Mode' : 'Switch to Dark Mode'}
+              aria-label="Toggle Theme"
+            >
+              {theme === 'dark' ? (
+                <Sun className="w-4 h-4 text-amber-400" />
+              ) : (
+                <Moon className="w-4 h-4 text-teal-400" />
+              )}
+            </button>
+
+            <button
+              onClick={() => setShowSettingsModal(true)}
+              className="p-2 rounded-full bg-slate-900/80 backdrop-blur-md border border-slate-700 text-slate-300 hover:text-white transition shadow-lg cursor-pointer"
+              title="Settings & Account"
+            >
+              <Settings className="w-4 h-4" />
+            </button>
+          </div>
         </div>
 
         {/* Avatar & Floating Stats Header (Mockup 1 layout) */}
         <div className="relative px-4 pb-4 -mt-16 text-center">
-          {/* Circular Avatar with Glowing Teal Ring (Avatar 90px in mockup) */}
+          {/* Circular Avatar with Glowing Teal Ring */}
           <div className="relative inline-block mx-auto mb-3">
             <div className="w-24 h-24 rounded-full p-1 bg-gradient-to-tr from-teal-400 via-cyan-400 to-purple-500 shadow-xl shadow-teal-500/30">
               <img
-                src="https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=300&auto=format&fit=crop&q=80"
-                alt="Brand Avatar"
+                src={currentUser?.avatar || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=300&auto=format&fit=crop&q=80'}
+                alt={currentUser?.name || 'User Avatar'}
                 referrerPolicy="no-referrer"
                 className="w-full h-full rounded-full object-cover ring-2 ring-slate-900"
               />
             </div>
-            <div className="absolute bottom-1 right-1 bg-teal-400 rounded-full p-1 shadow-md">
+            <div className="absolute bottom-1 right-1 bg-teal-400 rounded-full p-1 shadow-md" title="Verified Escrow User">
               <ShieldCheck className="w-3.5 h-3.5 text-slate-950" />
             </div>
           </div>
@@ -152,121 +189,243 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
           {/* Profile Card Header Info */}
           <div className="p-4 rounded-3xl bg-slate-950/70 backdrop-blur-md border border-slate-800 shadow-xl max-w-md mx-auto">
             <div className="flex items-center justify-center gap-1.5">
-              <h2 className="text-base sm:text-lg font-black text-white">@AGO_Brand</h2>
+              <h2 className="text-base sm:text-lg font-black text-white">
+                {currentUser?.name || 'Favour Chukwudi'}
+              </h2>
               <ShieldCheck className="w-4 h-4 text-teal-400" />
             </div>
 
+            <div className="text-xs text-teal-300 font-mono mt-0.5">
+              {currentUser?.handle || '@favour_chukwudi'} • <span className="text-slate-300">{currentUser?.city || 'Lagos'}, Nigeria 🇳🇬</span>
+            </div>
+
             <p className="text-xs text-slate-300 mt-1 font-medium">
-              Bio: "Streetwear & Couture for the African Culture 🔥 Made in Lagos, Nigeria 🇳🇬"
+              Member of AGO Verified Marketplace • Buyer & Seller Escrow Protected
             </p>
 
-            {/* Metrics: Followers, Products, Total Views (Real Data from Firestore) */}
+            {/* Metrics: Orders, Escrow Protected, Following */}
             <div className="grid grid-cols-3 gap-2 my-3.5 py-2.5 px-3 rounded-2xl bg-slate-900/90 border border-slate-800">
               <div>
                 <div className="text-sm sm:text-base font-black text-white">
-                  {(followerCount / 1000).toFixed(1)}K
+                  {firestoreOrders.length}
                 </div>
                 <div className="text-[10px] text-slate-400 uppercase tracking-wider font-semibold">
-                  Followers
+                  Orders
                 </div>
               </div>
               <div>
-                <div className="text-sm sm:text-base font-black text-white">
-                  {brandProducts.length}
+                <div className="text-sm sm:text-base font-black text-emerald-400">
+                  Active
                 </div>
                 <div className="text-[10px] text-slate-400 uppercase tracking-wider font-semibold">
-                  Products
+                  Escrow Vault
                 </div>
               </div>
               <div>
                 <div className="text-sm sm:text-base font-black text-teal-300">
-                  {(totalViews / 1000).toFixed(1)}K
+                  5.0 ★
                 </div>
                 <div className="text-[10px] text-slate-400 uppercase tracking-wider font-semibold">
-                  Live Views
+                  Trust Score
                 </div>
               </div>
             </div>
 
-            {/* Action Buttons: Follow, Send Gift, Message (Mockup 1 layout) */}
-            <div className="grid grid-cols-3 gap-2">
+            {/* Action Buttons */}
+            <div className="grid grid-cols-2 gap-2">
               <button
-                onClick={handleFollowToggle}
-                className={`py-2 px-3 rounded-xl font-bold text-xs flex items-center justify-center gap-1 transition cursor-pointer ${
-                  isFollowing
-                    ? 'bg-slate-800 text-teal-300 border border-teal-500/40'
-                    : 'bg-gradient-to-r from-teal-400 to-cyan-500 hover:from-teal-300 hover:to-cyan-400 text-slate-950 shadow-lg shadow-teal-500/20'
-                }`}
+                onClick={() => onOpenEscrowRoom && onOpenEscrowRoom()}
+                className="py-2 px-3 rounded-xl bg-gradient-to-r from-teal-400 to-cyan-500 hover:from-teal-300 hover:to-cyan-400 text-slate-950 font-bold text-xs flex items-center justify-center gap-1.5 transition shadow-lg shadow-teal-500/20 cursor-pointer"
               >
-                {isFollowing ? (
-                  <>
-                    <UserCheck className="w-3.5 h-3.5" />
-                    <span>Following</span>
-                  </>
-                ) : (
-                  <>
-                    <UserPlus className="w-3.5 h-3.5" />
-                    <span>Follow</span>
-                  </>
-                )}
+                <ShieldCheck className="w-4 h-4" />
+                <span>Open Escrow Room</span>
               </button>
 
               <button
-                onClick={() => setShowGiftModal(true)}
-                className="py-2 px-3 rounded-xl bg-slate-800 hover:bg-slate-700 text-amber-300 border border-slate-700 font-bold text-xs flex items-center justify-center gap-1 transition cursor-pointer"
+                onClick={() => setShowSettingsModal(true)}
+                className="py-2 px-3 rounded-xl bg-slate-800 hover:bg-slate-700 text-white border border-slate-700 font-bold text-xs flex items-center justify-center gap-1.5 transition cursor-pointer"
               >
-                <Gift className="w-3.5 h-3.5 text-amber-400" />
-                <span>Send Gift</span>
-              </button>
-
-              <button
-                onClick={() => onChatWithBrand('@AGO_Brand')}
-                className="py-2 px-3 rounded-xl bg-slate-800 hover:bg-slate-700 text-white border border-slate-700 font-bold text-xs flex items-center justify-center gap-1 transition cursor-pointer"
-              >
-                <MessageCircle className="w-3.5 h-3.5 text-teal-400" />
-                <span>Message</span>
+                <Settings className="w-4 h-4 text-teal-400" />
+                <span>Account Settings</span>
               </button>
             </div>
           </div>
 
-          {/* Sub Navigation Tabs: Products, Creator Dashboard, About */}
-          <div className="mt-4 flex bg-slate-950/80 p-1 rounded-2xl border border-slate-800 max-w-md mx-auto">
+          {/* Sub Navigation Tabs: My Account, Store Products, Creator Dashboard, About */}
+          <div className="mt-4 flex bg-slate-950/80 p-1 rounded-2xl border border-slate-800 max-w-md mx-auto overflow-x-auto no-scrollbar">
+            <button
+              onClick={() => setActiveTab('account')}
+              className={`flex-1 py-2 px-2.5 rounded-xl text-xs font-bold transition flex items-center justify-center gap-1.5 whitespace-nowrap cursor-pointer ${
+                activeTab === 'account'
+                  ? 'bg-gradient-to-r from-teal-500 to-cyan-600 text-slate-950 shadow-md'
+                  : 'text-slate-400 hover:text-slate-200'
+              }`}
+            >
+              <UserCheck className="w-3.5 h-3.5" />
+              <span>My Orders</span>
+            </button>
+
             <button
               onClick={() => setActiveTab('products')}
-              className={`flex-1 py-2 rounded-xl text-xs font-bold transition flex items-center justify-center gap-1.5 cursor-pointer ${
+              className={`flex-1 py-2 px-2.5 rounded-xl text-xs font-bold transition flex items-center justify-center gap-1.5 whitespace-nowrap cursor-pointer ${
                 activeTab === 'products'
                   ? 'bg-gradient-to-r from-teal-500 to-cyan-600 text-slate-950 shadow-md'
                   : 'text-slate-400 hover:text-slate-200'
               }`}
             >
               <ShoppingBag className="w-3.5 h-3.5" />
-              <span>Products ({brandProducts.length})</span>
+              <span>Brand Store</span>
             </button>
 
             <button
               onClick={() => setActiveTab('dashboard')}
-              className={`flex-1 py-2 rounded-xl text-xs font-bold transition flex items-center justify-center gap-1.5 cursor-pointer ${
+              className={`flex-1 py-2 px-2.5 rounded-xl text-xs font-bold transition flex items-center justify-center gap-1.5 whitespace-nowrap cursor-pointer ${
                 activeTab === 'dashboard'
                   ? 'bg-gradient-to-r from-teal-500 to-cyan-600 text-slate-950 shadow-md'
                   : 'text-slate-400 hover:text-slate-200'
               }`}
             >
               <TrendingUp className="w-3.5 h-3.5" />
-              <span>Creator Dashboard</span>
-            </button>
-
-            <button
-              onClick={() => setActiveTab('about')}
-              className={`flex-1 py-2 rounded-xl text-xs font-bold transition flex items-center justify-center gap-1.5 cursor-pointer ${
-                activeTab === 'about'
-                  ? 'bg-gradient-to-r from-teal-500 to-cyan-600 text-slate-950 shadow-md'
-                  : 'text-slate-400 hover:text-slate-200'
-              }`}
-            >
-              <Info className="w-3.5 h-3.5" />
-              <span>About Store</span>
+              <span>Creator Earnings</span>
             </button>
           </div>
+
+          {/* ================= TAB 0: MY ACCOUNT & ORDERS ================= */}
+          {activeTab === 'account' && (
+            <div className="mt-4 text-left space-y-3">
+              {/* Profile Bio Details Card */}
+              <div className="p-4 rounded-2xl bg-slate-950/90 border border-teal-500/30 shadow-lg space-y-2.5">
+                <div className="flex items-center justify-between pb-2 border-b border-slate-800 text-xs">
+                  <span className="text-slate-400">Full Name</span>
+                  <span className="font-bold text-white">{currentUser?.name || 'Favour Chukwudi'}</span>
+                </div>
+                <div className="flex items-center justify-between pb-2 border-b border-slate-800 text-xs">
+                  <span className="text-slate-400">Email Address</span>
+                  <span className="font-mono text-slate-200">{currentUser?.email || 'chukwudifavour2277@gmail.com'}</span>
+                </div>
+                <div className="flex items-center justify-between pb-2 border-b border-slate-800 text-xs">
+                  <span className="text-slate-400">Primary Location</span>
+                  <span className="text-teal-300 font-semibold">{currentUser?.city || 'Lagos'}, Nigeria 🇳🇬</span>
+                </div>
+                <div className="flex items-center justify-between text-xs">
+                  <span className="text-slate-400">Escrow Security</span>
+                  <span className="inline-flex items-center gap-1 text-emerald-400 font-bold">
+                    <ShieldCheck className="w-3.5 h-3.5" />
+                    <span>Protected by AGO Vault</span>
+                  </span>
+                </div>
+              </div>
+
+              {/* Theme & Appearance Switcher */}
+              <div className="p-3.5 rounded-2xl bg-slate-950/90 border border-slate-800 shadow-md">
+                <div className="flex items-center justify-between pb-2 mb-3 border-b border-slate-800">
+                  <div className="flex items-center gap-2 text-xs font-bold text-white">
+                    <Palette className="w-4 h-4 text-teal-400" />
+                    <span>Theme & Appearance</span>
+                  </div>
+                  <span className="text-[10px] px-2 py-0.5 rounded-full bg-teal-500/10 border border-teal-500/30 text-teal-300 font-bold uppercase">
+                    {theme === 'dark' ? 'Dark Palette' : 'Light Palette'}
+                  </span>
+                </div>
+
+                <p className="text-[11px] text-slate-400 mb-3">
+                  Choose your preferred color palette for Ago Lite marketplace and escrow rooms.
+                </p>
+
+                <div className="grid grid-cols-2 gap-2.5">
+                  {/* Dark Mode Option */}
+                  <button
+                    type="button"
+                    onClick={() => handleThemeChange('dark')}
+                    className={`p-3 rounded-xl border flex items-center gap-2.5 transition cursor-pointer text-left ${
+                      theme === 'dark'
+                        ? 'bg-slate-900 border-teal-400 ring-2 ring-teal-400/30 text-white shadow-lg'
+                        : 'bg-slate-950/60 border-slate-800 text-slate-400 hover:text-slate-200 hover:border-slate-700'
+                    }`}
+                  >
+                    <div className={`p-2 rounded-lg ${theme === 'dark' ? 'bg-teal-500/20 text-teal-300' : 'bg-slate-800 text-slate-400'}`}>
+                      <Moon className="w-4 h-4" />
+                    </div>
+                    <div>
+                      <div className="text-xs font-bold">Dark Mode</div>
+                      <div className="text-[10px] text-slate-400">Deep Slate & Neon Teal</div>
+                    </div>
+                  </button>
+
+                  {/* Light Mode Option */}
+                  <button
+                    type="button"
+                    onClick={() => handleThemeChange('light')}
+                    className={`p-3 rounded-xl border flex items-center gap-2.5 transition cursor-pointer text-left ${
+                      theme === 'light'
+                        ? 'bg-white border-teal-500 ring-2 ring-teal-500/30 text-slate-950 shadow-lg'
+                        : 'bg-slate-950/60 border-slate-800 text-slate-400 hover:text-slate-200 hover:border-slate-700'
+                    }`}
+                  >
+                    <div className={`p-2 rounded-lg ${theme === 'light' ? 'bg-amber-100 text-amber-600' : 'bg-slate-800 text-slate-400'}`}>
+                      <Sun className="w-4 h-4 text-amber-500" />
+                    </div>
+                    <div>
+                      <div className="text-xs font-bold">Light Mode</div>
+                      <div className="text-[10px] text-slate-400">Crisp Slate & Clean White</div>
+                    </div>
+                  </button>
+                </div>
+              </div>
+
+              {/* Recent Orders List */}
+              <div className="p-3.5 rounded-2xl bg-slate-950/80 border border-slate-800">
+                <div className="flex items-center justify-between mb-2.5 pb-2 border-b border-slate-800 text-xs font-bold text-white">
+                  <span>My Escrow Protected Orders</span>
+                  <span className="text-[10px] text-teal-400 font-normal">{firestoreOrders.length} records</span>
+                </div>
+
+                {firestoreOrders.length === 0 ? (
+                  <div className="text-center py-6 text-slate-400 text-xs space-y-2">
+                    <Package className="w-8 h-8 mx-auto text-slate-600" />
+                    <div>No purchase orders yet.</div>
+                    <button
+                      onClick={() => setActiveTab('products')}
+                      className="px-3 py-1.5 rounded-xl bg-teal-500/10 hover:bg-teal-500/20 text-teal-300 border border-teal-500/30 text-xs font-bold"
+                    >
+                      Browse Marketplace Items
+                    </button>
+                  </div>
+                ) : (
+                  <div className="space-y-2 max-h-56 overflow-y-auto">
+                    {firestoreOrders.map((ord) => (
+                      <div
+                        key={ord.id}
+                        onClick={() => onOpenEscrowRoom && onOpenEscrowRoom(ord.orderNumber)}
+                        className="p-2.5 rounded-xl bg-slate-900 hover:bg-slate-850 border border-slate-800 hover:border-teal-500/40 flex items-center justify-between text-xs cursor-pointer transition"
+                      >
+                        <div className="flex items-center gap-2.5">
+                          <div className="p-2 rounded-lg bg-teal-500/10 text-teal-400">
+                            <Package className="w-4 h-4" />
+                          </div>
+                          <div>
+                            <div className="font-bold text-white flex items-center gap-1.5">
+                              <span>Order #{ord.orderNumber}</span>
+                              <span className="text-[9px] px-1.5 py-0.2 rounded bg-teal-500/20 text-teal-300 font-semibold">
+                                🛡️ Escrow
+                              </span>
+                            </div>
+                            <div className="text-[10px] text-slate-400">
+                              {ord.items && ord.items.length > 0 ? ord.items[0].product.title : 'Marketplace Item'}
+                            </div>
+                          </div>
+                        </div>
+                        <div className="text-right">
+                          <div className="font-bold text-emerald-400">₦{ord.totalAmount.toLocaleString()}</div>
+                          <span className="text-[10px] text-teal-300 font-medium">Track Escrow →</span>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
 
           {/* ================= TAB 1: STORE PRODUCTS (Mockup 1 grid) ================= */}
           {activeTab === 'products' && (
@@ -415,12 +574,16 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
                     {firestoreOrders.map((ord) => (
                       <div
                         key={ord.id}
-                        className="p-2 rounded-xl bg-slate-900 border border-slate-800 flex items-center justify-between text-xs"
+                        onClick={() => onOpenEscrowRoom && onOpenEscrowRoom(ord.orderNumber)}
+                        className="p-2 rounded-xl bg-slate-900 hover:bg-slate-850 border border-slate-800 hover:border-teal-500/40 flex items-center justify-between text-xs cursor-pointer transition"
                       >
                         <div className="flex items-center gap-2">
                           <Package className="w-4 h-4 text-teal-400" />
                           <div>
-                            <div className="font-bold text-white">Order #{ord.orderNumber}</div>
+                            <div className="font-bold text-white flex items-center gap-1">
+                              <span>Order #{ord.orderNumber}</span>
+                              <span className="text-[9px] text-teal-400 font-normal">🛡️ Escrow</span>
+                            </div>
                             <div className="text-[10px] text-slate-400">Buyer: {ord.shipping.fullName}</div>
                           </div>
                         </div>
@@ -513,7 +676,7 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
               </button>
             </div>
 
-            <div className="p-3 rounded-2xl bg-slate-950 border border-slate-800 space-y-2 text-xs">
+            <div className="p-3 rounded-2xl bg-slate-950 border border-slate-800 space-y-2.5 text-xs">
               <div className="flex justify-between text-slate-300">
                 <span className="text-slate-400">Signed In As:</span>
                 <span className="font-bold text-white">{currentUser?.name || 'Favour Chukwudi'}</span>
@@ -529,6 +692,37 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
               <div className="flex justify-between text-slate-300">
                 <span className="text-slate-400">Account Type:</span>
                 <span className="text-emerald-400 font-bold">Verified Buyer & Seller</span>
+              </div>
+
+              {/* Theme Setting row */}
+              <div className="pt-2 border-t border-slate-800 flex items-center justify-between">
+                <span className="text-slate-400">Color Palette:</span>
+                <div className="flex items-center gap-1.5 p-1 rounded-xl bg-slate-900 border border-slate-800">
+                  <button
+                    type="button"
+                    onClick={() => handleThemeChange('dark')}
+                    className={`px-2.5 py-1 rounded-lg text-[11px] font-bold flex items-center gap-1 transition cursor-pointer ${
+                      theme === 'dark'
+                        ? 'bg-teal-500 text-slate-950 shadow-sm'
+                        : 'text-slate-400 hover:text-white'
+                    }`}
+                  >
+                    <Moon className="w-3 h-3" />
+                    <span>Dark</span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => handleThemeChange('light')}
+                    className={`px-2.5 py-1 rounded-lg text-[11px] font-bold flex items-center gap-1 transition cursor-pointer ${
+                      theme === 'light'
+                        ? 'bg-amber-400 text-slate-950 shadow-sm'
+                        : 'text-slate-400 hover:text-white'
+                    }`}
+                  >
+                    <Sun className="w-3 h-3" />
+                    <span>Light</span>
+                  </button>
+                </div>
               </div>
             </div>
 

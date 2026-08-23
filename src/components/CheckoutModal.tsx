@@ -10,6 +10,7 @@ interface CheckoutModalProps {
   items?: { product: Product; quantity: number; selectedSize?: string; selectedColor?: string }[];
   onClose: () => void;
   onOrderCompleted: () => void;
+  onOpenEscrowRoom?: (orderNumber: string) => void;
 }
 
 export const CheckoutModal: React.FC<CheckoutModalProps> = ({
@@ -17,6 +18,7 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
   items,
   onClose,
   onOrderCompleted,
+  onOpenEscrowRoom,
 }) => {
   const [step, setStep] = useState<1 | 2 | 3>(1);
   const [isProcessing, setIsProcessing] = useState<boolean>(false);
@@ -416,6 +418,20 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
             )}
 
             <div className="space-y-2">
+              {onOpenEscrowRoom && (
+                <button
+                  onClick={() => {
+                    onOrderCompleted();
+                    onClose();
+                    onOpenEscrowRoom(orderNumber);
+                  }}
+                  className="w-full py-3.5 rounded-xl bg-gradient-to-r from-teal-400 to-cyan-500 text-slate-950 font-black text-xs uppercase tracking-wider shadow-lg shadow-teal-500/20 transition flex items-center justify-center gap-2 cursor-pointer"
+                >
+                  <ShieldCheck className="w-4 h-4" />
+                  <span>Manage in Escrow Room & Proof Vault</span>
+                </button>
+              )}
+
               <button
                 onClick={() => setTrackingModalOpen(!trackingModalOpen)}
                 className="w-full py-3 rounded-xl bg-slate-800 hover:bg-slate-700 text-white font-bold text-xs border border-slate-700 transition"
@@ -428,7 +444,7 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
                   onOrderCompleted();
                   onClose();
                 }}
-                className="w-full py-3 rounded-xl bg-gradient-to-r from-teal-400 to-cyan-500 text-slate-950 font-black text-xs transition"
+                className="w-full py-2.5 rounded-xl bg-slate-900 hover:bg-slate-800 text-slate-400 hover:text-white font-semibold text-xs transition"
               >
                 Continue Shopping
               </button>

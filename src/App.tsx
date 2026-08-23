@@ -4,11 +4,12 @@ import { Navigation, MainTab } from './components/Navigation';
 import { HomeFeedMarketplace } from './components/HomeFeedMarketplace';
 import { ChatView } from './components/ChatView';
 import { ProfileView } from './components/ProfileView';
+import { EscrowOrderView } from './components/EscrowOrderView';
 import { ProductDetailModal } from './components/ProductDetailModal';
 import { CheckoutModal } from './components/CheckoutModal';
 import { CartDrawer } from './components/CartDrawer';
 import { AdminPanel } from './components/AdminPanel';
-import { PhoneAuthModal } from './components/PhoneAuthModal';
+import { AuthModal } from './components/AuthModal';
 import { SearchModal } from './components/SearchModal';
 import {
   Product,
@@ -45,6 +46,30 @@ export default function App() {
 
   const [currentTab, setCurrentTab] = useState<MainTab>('home');
   const [selectedCity, setSelectedCity] = useState<NigerianCity>('All Nigeria');
+  const [theme, setTheme] = useState<'dark' | 'light'>(() => {
+    try {
+      const saved = localStorage.getItem('ago_theme');
+      return saved === 'light' ? 'light' : 'dark';
+    } catch {
+      return 'dark';
+    }
+  });
+
+  // Sync theme to document body & localStorage
+  useEffect(() => {
+    try {
+      localStorage.setItem('ago_theme', theme);
+      if (theme === 'light') {
+        document.body.classList.add('theme-light');
+        document.documentElement.classList.add('light');
+      } else {
+        document.body.classList.remove('theme-light');
+        document.documentElement.classList.remove('light');
+      }
+    } catch {
+      // ignore
+    }
+  }, [theme]);
 
   // Firestore real-time state
   const [products, setProducts] = useState<Product[]>(SAMPLE_5_PRODUCTS);
@@ -54,6 +79,7 @@ export default function App() {
 
   // Modals & Drawers state
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
+  const [escrowProduct, setEscrowProduct] = useState<Product | null>(null);
   const [cart, setCart] = useState<CartItem[]>([]);
   const [isCartOpen, setIsCartOpen] = useState<boolean>(false);
   const [checkoutProduct, setCheckoutProduct] = useState<Product | null>(null);
@@ -65,6 +91,14 @@ export default function App() {
   // Chat Triggering State
   const [pendingAiPrompt, setPendingAiPrompt] = useState<string>('');
   const [activeSellerThreadId, setActiveSellerThreadId] = useState<string | null>(null);
+
+  // Helper to open Escrow Room for specific product or default
+  const handleOpenEscrowForProduct = (prod?: Product | null) => {
+    if (prod) {
+      setEscrowProduct(prod);
+    }
+    setCurrentTab('escrow');
+  };
 
   // Toast Helper
   const showToast = (msg: string) => {
@@ -344,19 +378,20 @@ export default function App() {
 
   const handleLogout = () => {
     localStorage.removeItem('ago_auth_user');
+    localStorage.removeItem('ago_user');
     setCurrentUser(null);
-    showToast('Signed out of AGO Super App');
+    showToast('Signed out of AGO Lite');
   };
 
   const totalCartCount = cart.reduce((sum, item) => sum + item.quantity, 0);
 
-  // If not authenticated via Phone OTP, force PhoneAuthModal
+  // If not authenticated, render the real-looking Login & Signup modal
   if (!currentUser) {
-    return <PhoneAuthModal onAuthenticated={(user) => setCurrentUser(user)} />;
+    return <AuthModal onAuthenticated={(user) => setCurrentUser(user)} />;
   }
 
   return (
-    <div className="min-h-screen bg-slate-950 text-slate-100 flex flex-col font-sans selection:bg-teal-500 selection:text-slate-950">
+    <div className={`min-h-screen ${theme === 'light' ? 'theme-light bg-slate-50 text-slate-900' : 'bg-slate-950 text-slate-100'} flex flex-col font-sans selection:bg-teal-500 selection:text-slate-950 transition-colors duration-200`}>
       {/* Sticky Header */}
       <Header
         selectedCity={selectedCity}
@@ -368,6 +403,7 @@ export default function App() {
           setActiveSellerThreadId(null);
           setCurrentTab('chat');
         }}
+        onOpenEscrow={() => handleOpenEscrowForProduct(null)}
         onOpenAdminPanel={() => setIsAdminOpen(true)}
       />
 
@@ -385,13 +421,23 @@ export default function App() {
             products={products}
             feedPosts={feedPosts}
             selectedCity={selectedCity}
+            currentUser={currentUser}
             onSelectProduct={setSelectedProduct}
             onChatSeller={handleChatSeller}
             onBuyNow={handleBuyNow}
+            onOpenEscrowOrder={(prod) => handleOpenEscrowForProduct(prod)}
             onOpenAiChatWithPrompt={handleOpenAiChatWithPrompt}
             onOpenCreatorProfile={(_handle) => setCurrentTab('profile')}
             onAddScrapedProduct={handleAddScrapedProduct}
             onSyncFirecrawl={handleSyncFirecrawl}
+          />
+        )}
+
+        {currentTab === 'escrow' && (
+          <EscrowOrderView
+            initialProduct={escrowProduct}
+            onGoToMarketplace={() => setCurrentTab('home')}
+            onOpenAiAssistant={handleOpenAiChatWithPrompt}
           />
         )}
 
@@ -413,6 +459,8 @@ export default function App() {
           <ProfileView
             products={products}
             currentUser={currentUser}
+            currentTheme={theme}
+            onToggleTheme={(t) => setTheme(t)}
             onSelectProduct={setSelectedProduct}
             onChatWithBrand={(_brand) => {
               const agoProduct = products.find((p) => p.seller.handle === '@AGO_Brand');
@@ -421,6 +469,7 @@ export default function App() {
               }
             }}
             onBuyNow={handleBuyNow}
+            onOpenEscrowRoom={() => handleOpenEscrowForProduct(null)}
             onOpenAdminPanel={() => setIsAdminOpen(true)}
             onLogout={handleLogout}
           />
@@ -465,6 +514,10 @@ export default function App() {
           onAddToCart={handleAddToCart}
           onBuyNow={handleBuyNow}
           onChatSeller={handleChatSeller}
+          onOpenEscrowRoom={(prod) => {
+            setSelectedProduct(null);
+            handleOpenEscrowForProduct(prod);
+          }}
           onAskAiAboutProduct={(prod) => {
             setSelectedProduct(null);
             handleOpenAiChatWithPrompt(
@@ -491,6 +544,10 @@ export default function App() {
             if (!checkoutProduct) {
               setCart([]);
             }
+          }}
+          onOpenEscrowRoom={(_orderNum) => {
+            setIsCheckoutOpen(false);
+            handleOpenEscrowForProduct(checkoutProduct);
           }}
         />
       )}

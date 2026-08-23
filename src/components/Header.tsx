@@ -1,5 +1,5 @@
 import React from 'react';
-import { Sparkles, ShoppingBag, MapPin, Search, ShieldAlert } from 'lucide-react';
+import { Sparkles, ShoppingBag, MapPin, Search, ShieldAlert, ShieldCheck } from 'lucide-react';
 import { NigerianCity } from '../types';
 import { AgoLogo } from './AgoLogo';
 
@@ -10,6 +10,7 @@ interface HeaderProps {
   onOpenCart: () => void;
   onOpenSearch: () => void;
   onOpenAiChat: () => void;
+  onOpenEscrow?: () => void;
   onOpenAdminPanel?: () => void;
 }
 
@@ -20,6 +21,7 @@ export const Header: React.FC<HeaderProps> = ({
   onOpenCart,
   onOpenSearch,
   onOpenAiChat,
+  onOpenEscrow,
   onOpenAdminPanel,
 }) => {
   const cities: NigerianCity[] = ['All Nigeria', 'Port Harcourt', 'Lagos', 'Abuja', 'Kano'];
@@ -45,6 +47,18 @@ export const Header: React.FC<HeaderProps> = ({
 
           {/* Action Tools */}
           <div className="flex items-center gap-2">
+            {/* Quick Escrow Room trigger */}
+            {onOpenEscrow && (
+              <button
+                onClick={onOpenEscrow}
+                className="hidden xs:flex items-center gap-1 px-2.5 py-1.5 rounded-full bg-teal-500/10 hover:bg-teal-500/20 border border-teal-500/30 text-teal-300 text-xs font-bold transition"
+                title="Open Escrow Room"
+              >
+                <ShieldCheck className="w-3.5 h-3.5 text-teal-400" />
+                <span>Escrow</span>
+              </button>
+            )}
+
             {/* Quick AI Search trigger */}
             <button
               onClick={onOpenAiChat}
@@ -55,7 +69,7 @@ export const Header: React.FC<HeaderProps> = ({
             </button>
 
             {/* Currency Pill */}
-            <div className="hidden xs:flex items-center gap-1 px-2.5 py-1 rounded-full bg-slate-800 border border-slate-700 text-xs font-semibold text-emerald-400">
+            <div className="hidden sm:flex items-center gap-1 px-2.5 py-1 rounded-full bg-slate-800 border border-slate-700 text-xs font-semibold text-emerald-400">
               <span>🇳🇬 ₦ NGN</span>
             </div>
 
