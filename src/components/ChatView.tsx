@@ -19,6 +19,10 @@ import {
   Image as ImageIcon,
   Key,
   AlertCircle,
+  AlertTriangle,
+  Lock,
+  Scale,
+  TrendingDown,
   Database,
   CheckCircle2
 } from 'lucide-react';
@@ -49,15 +53,19 @@ interface ChatViewProps {
 const DEFAULT_WELCOME_MSG: ChatMessage = {
   id: 'welcome-msg',
   sender: 'ago_ai',
-  text: 'How far my champion! I am **AGO Super AI Ultimate (v5)** — the most powerful AI assistant for everyone in Nigeria and beyond 🇳🇬✨.\n\nHere are my superpowers for you:\n• **🧠 Answer Any Question & Teach**: Learn skills, master business growth, ask any question\n• **✍️ Master Writer**: CVs, cold emails, Instagram captions, high-converting ad copy, essays\n• **💻 Expert Coder**: Write clean code in any language, debug bugs, build apps & websites\n• **🎨 Image Generation**: Say *"Create logo for AGO Market"* or *"Generate product photo for red gown"*\n• **🧠 Context & Business Memory**: Say *"AGO remember that my name is Favour and I sell clothes"*\n• **🛍️ Autonomous Shop Agent**: Find verified products in Lagos, Aba, Abuja, PH & buy directly\n• **💳 Escrow Gateways**: Paystack & Flutterwave multi-gateway protection\n\nWetin you go like make we conquer today?',
+  text: 'Hello my person! I am **AGO Super AI Ultimate (v5)** — your all-in-one Nigerian AI genius, shopping assistant, coder, writer, and companion 🇳🇬✨.\n\nI can help you with:\n• **🧠 Answers & Advice**: Ask any question, learn skills, get business growth strategies.\n• **✍️ Writing**: Essays, CVs, cold emails, Instagram captions, pitch decks.\n• **💻 Code & Tech**: Write code in any language, debug bugs, build apps.\n• **🛍️ Smart Shopping**: Find verified products in Lagos, Aba, Abuja, PH, Kano & bargain with sellers.\n• **🤝 Caring Companion**: Motivation, wisdom, and daily support in English & Pidgin.\n\nWetin you go like make we do today?',
   timestamp: 'Just now',
   createdAtMs: Date.now(),
   suggestedActions: [
-    '🎨 Create logo for AGO Market',
-    '🧠 AGO remember that my name is Favour and I sell clothes',
-    '🛍️ Buy iPhone 13 in Lagos for me',
-    '✍️ Write a winning CV & cover letter',
-    '💻 Help me write code or build an app',
+    '🧠 Teach me something deep today',
+    '💼 Give me business growth strategies for Nigeria',
+    '💻 Write & debug code in Python / React',
+    '✍️ Write a winning CV & cold email',
+    '🛍️ Find verified products in Lagos / Aba',
+    '🛡️ Check if this seller deal is a scam',
+    '📊 Compare iPhone 13 price on Jumia, Konga & FB',
+    '🔒 How does 4-step Escrow work (>₦50k)?',
+    '🇳🇬 Speak pidgin',
   ],
 };
 
@@ -459,6 +467,9 @@ export const ChatView: React.FC<ChatViewProps> = ({
         products: data?.products || [],
         suggestedActions: data?.suggestedActions || [],
         bargainScript: data?.bargainScript || undefined,
+        scamAlert: data?.scamAlert || undefined,
+        priceComparison: data?.priceComparison || undefined,
+        escrowDetail: data?.escrowDetail || undefined,
         languageDetected: data?.languageDetected || undefined,
         toolCallsExecuted: data?.toolCallsExecuted || undefined,
         generatedImage: data?.generatedImage || undefined,
@@ -633,13 +644,19 @@ export const ChatView: React.FC<ChatViewProps> = ({
                     {
                       id: `welcome-${Date.now()}`,
                       sender: 'ago_ai' as const,
-                      text: 'Chat history reset. How can I assist you with your shopping, bargaining, image generation, or memory today?',
+                      text: 'Chat history reset. Hello my person! I am **AGO Super AI Ultimate (v5)** — your all-in-one Nigerian AI genius, shopping assistant, coder, writer, and companion 🇳🇬✨.\n\nI can help you with:\n• **🧠 Answers & Advice**: Ask any question, learn skills, get business growth strategies.\n• **✍️ Writing**: Essays, CVs, cold emails, Instagram captions, pitch decks.\n• **💻 Code & Tech**: Write code in any language, debug bugs, build apps.\n• **🛍️ Smart Shopping**: Find verified products in Lagos, Aba, Abuja, PH, Kano & bargain with sellers.\n• **🤝 Caring Companion**: Motivation, wisdom, and daily support in English & Pidgin.\n\nWetin you go like make we do today?',
                       timestamp: 'Just now',
                       createdAtMs: Date.now(),
                       suggestedActions: [
-                        '🎨 Create logo for AGO Market',
-                        '🛍️ Buy iPhone 13 in Lagos for me',
-                        '🧠 AGO what did I tell you about my business?',
+                        '🧠 Teach me something deep today',
+                        '💼 Give me business growth strategies for Nigeria',
+                        '💻 Write & debug code in Python / React',
+                        '✍️ Write a winning CV & cold email',
+                        '🛍️ Find verified products in Lagos / Aba',
+                        '🛡️ Check if this seller deal is a scam',
+                        '📊 Compare iPhone 13 price on Jumia, Konga & FB',
+                        '🔒 How does 4-step Escrow work (>₦50k)?',
+                        '🇳🇬 Speak pidgin',
                       ],
                     },
                   ];
@@ -836,6 +853,166 @@ export const ChatView: React.FC<ChatViewProps> = ({
                     </div>
                   )}
 
+                  {/* Render Anti-Scam Alert Card if present */}
+                  {msg.scamAlert && (
+                    <div className="mt-3 p-3.5 rounded-2xl bg-gradient-to-br from-rose-950/60 via-slate-900 to-slate-950 border border-rose-500/60 shadow-xl space-y-2.5">
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-1.5 text-xs font-bold text-rose-300">
+                          <AlertTriangle className="w-4 h-4 text-rose-400 animate-pulse" />
+                          <span>AGO Anti-Scam Detection</span>
+                        </div>
+                        <span
+                          className={`px-2 py-0.5 rounded-full text-[10px] font-extrabold uppercase tracking-wider ${
+                            msg.scamAlert.riskLevel === 'high'
+                              ? 'bg-rose-500 text-white shadow-sm'
+                              : msg.scamAlert.riskLevel === 'medium'
+                              ? 'bg-amber-500 text-slate-950'
+                              : 'bg-emerald-500 text-slate-950'
+                          }`}
+                        >
+                          {msg.scamAlert.riskLevel} Risk
+                        </span>
+                      </div>
+
+                      {msg.scamAlert.payBeforeDeliveryWarning && (
+                        <div className="p-2.5 rounded-xl bg-rose-500/20 border border-rose-500/40 text-xs font-bold text-rose-200 flex items-start gap-2">
+                          <AlertCircle className="w-4 h-4 text-rose-400 shrink-0 mt-0.5" />
+                          <div>
+                            <span className="text-white uppercase font-black tracking-wide">
+                              ⚠️ NEVER Pay Before Delivery!
+                            </span>
+                            <p className="text-[11px] text-rose-200/90 font-normal mt-0.5">
+                              Never send money directly to a seller's bank account before you receive and inspect the item. Always use AGO Escrow.
+                            </p>
+                          </div>
+                        </div>
+                      )}
+
+                      {msg.scamAlert.warning && (
+                        <p className="text-xs text-slate-200 font-medium leading-relaxed">
+                          {msg.scamAlert.warning}
+                        </p>
+                      )}
+
+                      {msg.scamAlert.reasons && msg.scamAlert.reasons.length > 0 && (
+                        <div className="p-2.5 rounded-xl bg-slate-950/80 border border-slate-800 space-y-1">
+                          <span className="text-[10px] uppercase font-bold text-slate-400 tracking-wider">
+                            Risk Factors Identified:
+                          </span>
+                          <ul className="space-y-1 text-[11px] text-slate-300">
+                            {msg.scamAlert.reasons.map((r, idx) => (
+                              <li key={idx} className="flex items-center gap-1.5">
+                                <span className="w-1.5 h-1.5 rounded-full bg-rose-400 shrink-0" />
+                                <span>{r}</span>
+                              </li>
+                            ))}
+                          </ul>
+                        </div>
+                      )}
+                    </div>
+                  )}
+
+                  {/* Render Price Comparison Card if present */}
+                  {msg.priceComparison && (
+                    <div className="mt-3 p-3.5 rounded-2xl bg-gradient-to-br from-indigo-950/50 via-slate-900 to-slate-950 border border-indigo-500/40 shadow-xl space-y-3">
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-1.5 text-xs font-bold text-indigo-300">
+                          <Scale className="w-4 h-4 text-indigo-400" />
+                          <span>Price Comparison: {msg.priceComparison.itemName}</span>
+                        </div>
+                        <span className="px-2 py-0.5 rounded bg-indigo-950 border border-indigo-500/40 text-[9px] font-bold text-indigo-300">
+                          Live African Market
+                        </span>
+                      </div>
+
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                        {/* Jumia */}
+                        <div className="p-2.5 rounded-xl bg-slate-950/90 border border-slate-800">
+                          <div className="text-[10px] text-slate-400 font-semibold flex items-center justify-between">
+                            <span>🟠 Jumia</span>
+                            <span className="text-[9px] text-slate-500">Official Retail</span>
+                          </div>
+                          <div className="text-xs font-extrabold text-white mt-1">
+                            {msg.priceComparison.jumiaPrice}
+                          </div>
+                        </div>
+
+                        {/* Konga */}
+                        <div className="p-2.5 rounded-xl bg-slate-950/90 border border-slate-800">
+                          <div className="text-[10px] text-slate-400 font-semibold flex items-center justify-between">
+                            <span>🔴 Konga</span>
+                            <span className="text-[9px] text-slate-500">Official Retail</span>
+                          </div>
+                          <div className="text-xs font-extrabold text-white mt-1">
+                            {msg.priceComparison.kongaPrice}
+                          </div>
+                        </div>
+
+                        {/* Facebook Marketplace */}
+                        <div className="p-2.5 rounded-xl bg-slate-950/90 border border-rose-500/30">
+                          <div className="text-[10px] text-rose-400 font-semibold flex items-center justify-between">
+                            <span>🔵 Facebook Marketplace</span>
+                            <span className="text-[9px] text-rose-400 font-bold">⚠️ High Scam Risk</span>
+                          </div>
+                          <div className="text-xs font-extrabold text-slate-200 mt-1">
+                            {msg.priceComparison.facebookMarketplacePrice}
+                          </div>
+                        </div>
+
+                        {/* AGO Escrow Marketplace */}
+                        <div className="p-2.5 rounded-xl bg-teal-950/60 border border-teal-500/50">
+                          <div className="text-[10px] text-teal-300 font-bold flex items-center justify-between">
+                            <span>🛡️ AGO Marketplace</span>
+                            <span className="text-[9px] text-teal-300 font-bold">100% Escrow</span>
+                          </div>
+                          <div className="text-xs font-black text-teal-300 mt-1">
+                            {msg.priceComparison.agoPrice}
+                          </div>
+                        </div>
+                      </div>
+
+                      {msg.priceComparison.verdict && (
+                        <div className="p-2.5 rounded-xl bg-slate-950/80 border border-slate-800 text-[11px] text-slate-300 leading-relaxed">
+                          💡 <strong className="text-white">Verdict:</strong> {msg.priceComparison.verdict}
+                        </div>
+                      )}
+                    </div>
+                  )}
+
+                  {/* Render Escrow 4-Step Process Card if present */}
+                  {msg.escrowDetail && (
+                    <div className="mt-3 p-3.5 rounded-2xl bg-gradient-to-br from-teal-950/50 via-slate-900 to-slate-950 border border-teal-500/50 shadow-xl space-y-3">
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-1.5 text-xs font-bold text-teal-300">
+                          <Lock className="w-4 h-4 text-teal-400" />
+                          <span>AGO Escrow 4-Step Protection</span>
+                        </div>
+                        <span className="px-2 py-0.5 rounded-full bg-teal-950 border border-teal-400/40 text-[9px] font-bold text-teal-300">
+                          Recommended &gt; ₦50,000
+                        </span>
+                      </div>
+
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                        {msg.escrowDetail.steps.map((step) => (
+                          <div
+                            key={step.stepNumber}
+                            className="p-2.5 rounded-xl bg-slate-950/90 border border-slate-800 space-y-1"
+                          >
+                            <div className="flex items-center gap-1.5">
+                              <span className="w-5 h-5 rounded-full bg-teal-500/20 text-teal-300 text-[10px] font-black flex items-center justify-center border border-teal-500/40">
+                                {step.stepNumber}
+                              </span>
+                              <span className="text-xs font-bold text-white">{step.title}</span>
+                            </div>
+                            <p className="text-[11px] text-slate-400 leading-relaxed pl-6">
+                              {step.description}
+                            </p>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
                   {/* Render Bargaining Pitch Script Card if present */}
                   {msg.bargainScript && (
                     <div className="mt-3 p-3.5 rounded-2xl bg-gradient-to-br from-amber-950/40 to-slate-900 border border-amber-500/40 shadow-xl">
@@ -974,19 +1151,24 @@ export const ChatView: React.FC<ChatViewProps> = ({
             ))}
 
             {isLoading && (
-              <div className="flex gap-2.5 justify-start animate-pulse">
-                <div className="w-8 h-8 rounded-xl bg-slate-900 border border-slate-800 p-0.5 shrink-0 flex items-center justify-center shadow">
+              <div className="flex gap-2.5 justify-start">
+                <div className="w-8 h-8 rounded-xl bg-slate-900 border border-teal-500/40 p-0.5 shrink-0 flex items-center justify-center shadow-lg shadow-teal-500/10">
                   <AgoIcon size={22} />
                 </div>
-                <div className="bg-slate-800/90 p-3 rounded-2xl rounded-tl-none border border-slate-700/70 text-xs text-slate-300 flex items-center gap-2.5">
-                  <div className="flex items-center gap-1">
-                    <div className="w-2 h-2 rounded-full bg-teal-400 animate-bounce" />
-                    <div className="w-2 h-2 rounded-full bg-cyan-400 animate-bounce [animation-delay:0.2s]" />
-                    <div className="w-2 h-2 rounded-full bg-purple-400 animate-bounce [animation-delay:0.4s]" />
+                <div className="bg-gradient-to-r from-slate-900 via-slate-800/90 to-slate-900 p-3 rounded-2xl rounded-tl-none border border-teal-500/30 text-xs text-slate-300 flex items-center gap-2.5 shadow-lg">
+                  <div className="flex items-center gap-1.5">
+                    <div className="w-2 h-2 rounded-full bg-teal-400 animate-ping" />
+                    <div className="w-2 h-2 rounded-full bg-cyan-400 animate-bounce [animation-delay:0.1s]" />
+                    <div className="w-2 h-2 rounded-full bg-emerald-400 animate-bounce [animation-delay:0.2s]" />
                   </div>
-                  <span className="text-[11px] text-teal-300 font-semibold">
-                    AGO Super AI is thinking, generating & querying tools...
-                  </span>
+                  <div className="flex items-center gap-1.5">
+                    <span className="text-[11px] text-teal-300 font-bold">
+                      ⚡ Turbo Fast Thinking...
+                    </span>
+                    <span className="text-[9px] px-1.5 py-0.2 rounded-full bg-teal-500/20 text-teal-300 font-mono">
+                      &lt;0.5s
+                    </span>
+                  </div>
                 </div>
               </div>
             )}

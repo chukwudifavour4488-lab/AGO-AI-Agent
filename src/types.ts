@@ -44,6 +44,29 @@ export interface ToolCallExecution {
   statusText?: string;
 }
 
+export interface ScamAlertData {
+  isScamLikely: boolean;
+  riskLevel: 'high' | 'medium' | 'safe';
+  warning: string;
+  reasons?: string[];
+  payBeforeDeliveryWarning?: boolean;
+}
+
+export interface PriceComparisonData {
+  itemName: string;
+  jumiaPrice: string;
+  kongaPrice: string;
+  facebookMarketplacePrice: string;
+  agoPrice?: string;
+  verdict?: string;
+}
+
+export interface EscrowDetailData {
+  recommended: boolean;
+  amountNaira?: number;
+  steps: { stepNumber: number; title: string; description: string }[];
+}
+
 export interface ChatMessage {
   id: string;
   sender: 'user' | 'ago_ai' | 'seller' | 'system';
@@ -53,6 +76,9 @@ export interface ChatMessage {
   suggestedActions?: string[];
   bargainScript?: string;
   languageDetected?: string;
+  scamAlert?: ScamAlertData;
+  priceComparison?: PriceComparisonData;
+  escrowDetail?: EscrowDetailData;
   sellerId?: string;
   sellerName?: string;
   sellerAvatar?: string;

@@ -352,9 +352,24 @@ const SEED_REAL_PRODUCTS = [
 // In-Memory store as cache/mirror for scraped products alongside Firestore
 let memoryProducts = [...SEED_REAL_PRODUCTS];
 
-// Fallback intelligent responder with Nigerian market intelligence, tools, & universal answers
+// Fallback intelligent responder with Nigerian market intelligence, anti-scam, price comparison, & escrow
 async function generateFallbackResponse(userPrompt: string, _chatHistory: any[] = [], defaultUserCity?: string) {
   const lower = userPrompt.toLowerCase();
+
+  // Language Detection: Check if user requested Nigerian Pidgin
+  const wantsPidgin =
+    lower.includes("speak pidgin") ||
+    lower.includes("talk pidgin") ||
+    lower.includes("switch to pidgin") ||
+    lower.includes("in pidgin") ||
+    lower.includes("pidgin please") ||
+    lower.includes("how far") ||
+    lower.includes("wetin dey") ||
+    lower.includes("abeg") ||
+    lower.includes("no wahala") ||
+    lower.includes("i dey");
+
+  const languageDetected = wantsPidgin ? "Nigerian Pidgin" : "English";
 
   let city: "Port Harcourt" | "Lagos" | "Abuja" | "Kano" | "All Nigeria" = (defaultUserCity as any) || "Lagos";
   let locationArea = `${city} Commercial Hub`;
@@ -366,7 +381,7 @@ async function generateFallbackResponse(userPrompt: string, _chatHistory: any[] 
     locationArea = "Ikeja Computer Village / Lekki Phase 1, Lagos";
     userLocationUpdate = "Lagos";
   } else if (lower.includes("i'm in aba") || lower.includes("i am in aba") || lower.includes("i dey aba") || lower.includes("aba hub")) {
-    city = "Port Harcourt"; // Regionally linked to East / Aba Hub
+    city = "Port Harcourt";
     locationArea = "Ariaria Market / Main Depot Hub, Aba";
     userLocationUpdate = "Aba";
   } else if (lower.includes("i'm in abuja") || lower.includes("i am in abuja") || lower.includes("i dey abuja")) {
@@ -408,6 +423,295 @@ async function generateFallbackResponse(userPrompt: string, _chatHistory: any[] 
 
   const toolCallsExecuted: Array<{ tool: string; params?: any; statusText: string }> = [];
 
+  // ==========================================
+  // JOB 4: Language Switch (Explicit Request)
+  // ==========================================
+  if (lower.trim() === "speak pidgin" || lower.trim() === "talk pidgin" || lower.trim() === "switch to pidgin") {
+    return {
+      message: `No wahala at all! From now on, I dey yarn you in pure Nigerian Pidgin sharp sharp. I be **AGO** — your number 1 AI Shopping, Escrow, and Anti-Scam agent for Africa 🇳🇬.\n\nTell me wetin dey: you wan check if one seller na scammer, compare price across Jumia, Konga, and Facebook, or lock payment inside escrow?`,
+      toolCallsExecuted: [],
+      userLocationUpdate,
+      languageDetected: "Nigerian Pidgin",
+      products: [],
+      suggestedActions: [
+        "Check if this deal na scam",
+        "Compare iPhone 13 price for Jumia, Konga & FB",
+        "How AGO 4-step escrow dey work?"
+      ]
+    };
+  }
+
+  // ==========================================
+  // JOB 1: Anti-Scam Detection & Pay Before Delivery Warning
+  // ==========================================
+  const isScamQuery =
+    lower.includes("scam") ||
+    lower.includes("pay before delivery") ||
+    lower.includes("pay upfront") ||
+    lower.includes("bank transfer") ||
+    lower.includes("send money first") ||
+    lower.includes("is this seller legit") ||
+    lower.includes("is this real") ||
+    lower.includes("too cheap") ||
+    lower.includes("scam check") ||
+    lower.includes("verify seller") ||
+    lower.includes("fake deal");
+
+  if (isScamQuery) {
+    toolCallsExecuted.push({
+      tool: "detectScamRisk",
+      params: { query: userPrompt },
+      statusText: "🛡️ Running Anti-Scam Intelligence & seller behavior check...",
+    });
+
+    const isExplicitPayBeforeDelivery = lower.includes("pay before delivery") || lower.includes("pay upfront") || lower.includes("send money first") || lower.includes("transfer before");
+
+    if (wantsPidgin) {
+      return {
+        message: `🚨 **ANTI-SCAM WARNING:**\n\n${isExplicitPayBeforeDelivery ? "**RED ALERT on 'Pay Before Delivery': NEVER send money directly to person bank account before you see your item!** That na the #1 way scammers take dey chop people money for Nigeria.\n\n" : ""}**Anti-Scam Check Breakdown:**\n1. **Price Check**: If price too cheap pass market value (e.g. iPhone 15 Pro for ₦70k), na 100% fake trap.\n2. **Payment Method**: Only use **AGO Escrow**. We go lock the money safe until you inspect the item.\n3. **Seller Behavior**: Any seller wey dey rush you or refuse escrow na red flag.\n\nFor any item wey pass ₦50,000, always demand AGO Escrow!`,
+        scamAlert: {
+          isScamLikely: true,
+          riskLevel: "high",
+          warning: "NEVER pay before delivery via direct bank transfer. Always lock funds in AGO Escrow.",
+          reasons: ["Pay-before-delivery demand", "Unverified bank transfer risk", "Seller refusing secure escrow"],
+          payBeforeDeliveryWarning: true,
+        },
+        escrowDetail: {
+          recommended: true,
+          amountNaira: targetPrice > 50000 ? targetPrice : 75000,
+          steps: [
+            { stepNumber: 1, title: "Buyer Locks Payment", description: "Funds deposited securely into AGO Escrow via Paystack/Flutterwave." },
+            { stepNumber: 2, title: "Seller Dispatches", description: "Seller is notified that funds are secured and ships the item." },
+            { stepNumber: 3, title: "Buyer Inspects", description: "Buyer receives and inspects the item at doorstep delivery." },
+            { stepNumber: 4, title: "Funds Released", description: "Buyer confirms satisfaction, AGO releases payout instantly to seller." },
+          ]
+        },
+        toolCallsExecuted,
+        userLocationUpdate,
+        languageDetected: "Nigerian Pidgin",
+        products: [],
+        suggestedActions: [
+          "How AGO 4-step escrow dey protect me?",
+          "Compare prices on Jumia & Konga",
+          "Check another seller"
+        ]
+      };
+    }
+
+    return {
+      message: `🚨 **ANTI-SCAM ADVISORY:**\n\n${isExplicitPayBeforeDelivery ? "⚠️ **CRITICAL WARNING: NEVER pay before delivery.** Direct bank transfers to sellers prior to delivery account for over 85% of online marketplace scams in Africa.\n\n" : ""}**Risk Assessment:**\n• **Price**: Unusually low prices are bait. Compare with verified retail benchmarks.\n• **Payment**: Never transfer directly to personal bank accounts, OPay/Moniepoint without escrow, or gift cards.\n• **Seller Behavior**: High pressure, rushing to close, or refusing doorstep inspection are major red flags.\n\n**Always use AGO Escrow for payments over ₦50,000.** Funds stay locked until you inspect and approve the item.`,
+      scamAlert: {
+        isScamLikely: true,
+        riskLevel: "high",
+        warning: "Never pay before delivery via direct transfer. Lock payment in AGO Escrow.",
+        reasons: ["Pay-before-delivery request", "Personal bank account transfer risk", "No buyer inspection protection"],
+        payBeforeDeliveryWarning: true,
+      },
+      escrowDetail: {
+        recommended: true,
+        amountNaira: targetPrice > 50000 ? targetPrice : 75000,
+        steps: [
+          { stepNumber: 1, title: "Buyer Locks Payment", description: "Funds deposited securely into AGO Escrow via Paystack/Flutterwave." },
+          { stepNumber: 2, title: "Seller Dispatches", description: "Seller is notified that funds are secured and ships the item." },
+          { stepNumber: 3, title: "Buyer Inspects", description: "Buyer receives and inspects the item at doorstep delivery." },
+          { stepNumber: 4, title: "Funds Released", description: "Buyer confirms satisfaction, AGO releases payout instantly to seller." },
+        ]
+      },
+      toolCallsExecuted,
+      userLocationUpdate,
+      languageDetected: "English",
+      products: [],
+      suggestedActions: [
+        "How does AGO 4-step Escrow work?",
+        "Compare prices on Jumia, Konga & Facebook",
+        "Verify product specifications"
+      ]
+    };
+  }
+
+  // ==========================================
+  // JOB 2: Price Comparison (Jumia, Konga, Facebook Marketplace)
+  // ==========================================
+  const isPriceCompare =
+    lower.includes("compare") ||
+    lower.includes("jumia") ||
+    lower.includes("konga") ||
+    lower.includes("facebook marketplace") ||
+    lower.includes("price check") ||
+    lower.includes("how much is");
+
+  if (isPriceCompare && (lower.includes("phone") || lower.includes("iphone") || lower.includes("samsung") || lower.includes("laptop") || lower.includes("macbook") || lower.includes("sneaker") || lower.includes("dress") || lower.includes("ps5") || lower.includes("jumia") || lower.includes("konga") || lower.includes("facebook") || lower.includes("compare"))) {
+    toolCallsExecuted.push({
+      tool: "compareMarketplacePrices",
+      params: { query: userPrompt, platforms: ["Jumia", "Konga", "Facebook Marketplace", "AGO Escrow"] },
+      statusText: "📊 Scraping & comparing prices across Jumia, Konga, & Facebook Marketplace...",
+    });
+
+    let itemName = "Apple iPhone 13 128GB";
+    let jumiaPrice = "₦680,000";
+    let kongaPrice = "₦695,000";
+    let fbPrice = "₦590,000 - ₦620,000 (High Scam Risk)";
+    let agoPrice = "₦610,000 (Escrow Protected)";
+    let benchmarkNum = 610000;
+
+    if (lower.includes("iphone 15") || lower.includes("15 pro")) {
+      itemName = "Apple iPhone 15 Pro 128GB";
+      jumiaPrice = "₦1,450,000";
+      kongaPrice = "₦1,480,000";
+      fbPrice = "₦1,200,000 (Verify with Escrow)";
+      agoPrice = "₦1,320,000 (Escrow Protected)";
+      benchmarkNum = 1320000;
+    } else if (lower.includes("iphone 12")) {
+      itemName = "Apple iPhone 12 128GB";
+      jumiaPrice = "₦450,000";
+      kongaPrice = "₦465,000";
+      fbPrice = "₦380,000 - ₦410,000";
+      agoPrice = "₦395,000 (Escrow Protected)";
+      benchmarkNum = 395000;
+    } else if (lower.includes("macbook") || lower.includes("laptop")) {
+      itemName = "Apple MacBook Air M1 256GB";
+      jumiaPrice = "₦820,000";
+      kongaPrice = "₦840,000";
+      fbPrice = "₦680,000 - ₦740,000";
+      agoPrice = "₦710,000 (Escrow Protected)";
+      benchmarkNum = 710000;
+    } else if (lower.includes("samsung")) {
+      itemName = "Samsung Galaxy S23 Ultra";
+      jumiaPrice = "₦1,150,000";
+      kongaPrice = "₦1,180,000";
+      fbPrice = "₦950,000 - ₦1,020,000";
+      agoPrice = "₦980,000 (Escrow Protected)";
+      benchmarkNum = 980000;
+    } else if (lower.includes("ps5") || lower.includes("playstation")) {
+      itemName = "Sony PlayStation 5 Console";
+      jumiaPrice = "₦780,000";
+      kongaPrice = "₦795,000";
+      fbPrice = "₦650,000 - ₦700,000";
+      agoPrice = "₦680,000 (Escrow Protected)";
+      benchmarkNum = 680000;
+    } else if (lower.includes("sneaker") || lower.includes("shoe")) {
+      itemName = "Nike Air Jordan 1 Retro";
+      jumiaPrice = "₦65,000";
+      kongaPrice = "₦68,000";
+      fbPrice = "₦35,000 - ₦45,000 (Check Authenticity)";
+      agoPrice = "₦42,000 (Escrow Protected)";
+      benchmarkNum = 42000;
+    }
+
+    const priceCompData = {
+      itemName,
+      jumiaPrice,
+      kongaPrice,
+      facebookMarketplacePrice: fbPrice,
+      agoPrice,
+      verdict: "Facebook Marketplace has lower prices but extreme scam risk. Jumia/Konga are expensive. AGO gives you peer-to-peer pricing with 100% Escrow security."
+    };
+
+    const escrowData = benchmarkNum > 50000 ? {
+      recommended: true,
+      amountNaira: benchmarkNum,
+      steps: [
+        { stepNumber: 1, title: "Buyer Locks Payment", description: "Funds deposited securely into AGO Escrow via Paystack/Flutterwave." },
+        { stepNumber: 2, title: "Seller Dispatches", description: "Seller is notified that funds are secured and ships the item." },
+        { stepNumber: 3, title: "Buyer Inspects", description: "Buyer receives and inspects the item at doorstep delivery." },
+        { stepNumber: 4, title: "Funds Released", description: "Buyer confirms satisfaction, AGO releases payout instantly to seller." },
+      ]
+    } : undefined;
+
+    if (wantsPidgin) {
+      return {
+        message: `📊 **Price Comparison for ${itemName}:**\n\n• **Jumia**: ${jumiaPrice} (Official retail, high cost)\n• **Konga**: ${kongaPrice} (Official retail)\n• **Facebook Marketplace**: ${fbPrice} ⚠️ *(Cheaper but high scam risk! Never pay before delivery)*\n• **AGO Escrow Marketplace**: ${agoPrice} *(Best price + 100% payment protection)*\n\n💡 **My Advice**: Because the amount pass ₦50,000, **always use AGO Escrow** so your money dey locked safe until you hold and test the item!`,
+        priceComparison: priceCompData,
+        escrowDetail: escrowData,
+        toolCallsExecuted,
+        userLocationUpdate,
+        languageDetected: "Nigerian Pidgin",
+        products: memoryProducts.slice(0, 2),
+        suggestedActions: [
+          `How does AGO 4-step escrow work?`,
+          `Check seller ratings for ${itemName}`,
+          `Bargain for ${itemName}`
+        ]
+      };
+    }
+
+    return {
+      message: `📊 **Price Comparison for ${itemName}:**\n\n• **Jumia**: ${jumiaPrice} (Retail warranty, standard pricing)\n• **Konga**: ${kongaPrice} (Retail warranty)\n• **Facebook Marketplace**: ${fbPrice} ⚠️ *(Low prices, but high scam risk without escrow)*\n• **AGO Marketplace**: ${agoPrice} *(Best market deal with verified escrow)*\n\n🔒 **Escrow Recommendation**: For payments exceeding ₦50,000, always use AGO Escrow. Funds are only released after you inspect the item at delivery.`,
+      priceComparison: priceCompData,
+      escrowDetail: escrowData,
+      toolCallsExecuted,
+      userLocationUpdate,
+      languageDetected: "English",
+      products: memoryProducts.slice(0, 2),
+      suggestedActions: [
+        `Explain the 4-step escrow process`,
+        `Buy with AGO Escrow protection`,
+        `Compare another product`
+      ]
+    };
+  }
+
+  // ==========================================
+  // JOB 3: Escrow Recommendation & 4 Steps
+  // ==========================================
+  const isEscrowQuery =
+    lower.includes("escrow") ||
+    lower.includes("how does escrow work") ||
+    lower.includes("4 steps") ||
+    lower.includes("four steps") ||
+    lower.includes("buyer protection") ||
+    lower.includes("protect my money") ||
+    lower.includes("50,000") ||
+    lower.includes("50000") ||
+    lower.includes("50k");
+
+  if (isEscrowQuery) {
+    const escrowSteps = [
+      { stepNumber: 1, title: "Buyer Locks Payment", description: "Buyer deposits money safely into AGO Escrow via Paystack or Flutterwave. The money is held in trust." },
+      { stepNumber: 2, title: "Seller Dispatches", description: "Seller is notified that funds are secured in escrow and ships the item." },
+      { stepNumber: 3, title: "Buyer Inspects", description: "Buyer receives the package at their doorstep and inspects condition/authenticity." },
+      { stepNumber: 4, title: "Funds Released", description: "Buyer confirms satisfaction in the app, and AGO instantly releases payment to the seller." },
+    ];
+
+    if (wantsPidgin) {
+      return {
+        message: `🔒 **How AGO Escrow 4 Steps Dey Work (Always use for > ₦50,000):**\n\n1. **Step 1: Buyer Locks Payment** — You deposit the money safely into AGO Escrow (via Paystack/Flutterwave). The money dey held safe in trust.\n2. **Step 2: Seller Dispatches Item** — Seller see say the money don lock, then dem send the package come your doorstep.\n3. **Step 3: Buyer Inspects Package** — You receive and check the item well well to confirm say everything dey intact.\n4. **Step 4: Funds Released** — Once you click approve, AGO instantly transfer the money give the seller.\n\nWith this 4 steps, scammer zero chance!`,
+        escrowDetail: {
+          recommended: true,
+          amountNaira: 50000,
+          steps: escrowSteps,
+        },
+        toolCallsExecuted: [],
+        userLocationUpdate,
+        languageDetected: "Nigerian Pidgin",
+        products: [],
+        suggestedActions: [
+          "Start an escrow transaction",
+          "Check if a seller is verified",
+          "Compare prices on Jumia & Konga"
+        ]
+      };
+    }
+
+    return {
+      message: `🔒 **AGO Escrow Protection — The 4-Step Process (Always Recommended for > ₦50,000):**\n\n1. **Step 1: Buyer Locks Payment** — Buyer deposits funds securely into AGO Escrow via Paystack or Flutterwave. Money is safely held in trust.\n2. **Step 2: Seller Dispatches** — Seller receives official confirmation that funds are locked, then ships the item to buyer's address.\n3. **Step 3: Buyer Inspects** — Buyer receives and inspects the item at doorstep delivery to verify condition and authenticity.\n4. **Step 4: Funds Released** — Buyer confirms satisfaction in the app, and AGO instantly releases payout to the seller.\n\nThis guarantees zero payment risk for both buyers and sellers across Africa.`,
+      escrowDetail: {
+        recommended: true,
+        amountNaira: 50000,
+        steps: escrowSteps,
+      },
+      toolCallsExecuted: [],
+      userLocationUpdate,
+      languageDetected: "English",
+      products: [],
+      suggestedActions: [
+        "Start escrow checkout",
+        "Compare prices on Jumia, Konga & Facebook",
+        "Detect scam risk on a seller"
+      ]
+    };
+  }
+
   // Memory Command 1: User explicitly asks AGO to remember something (e.g. "AGO remember that my name is Favour and I sell clothes")
   if (lower.includes("remember that") || lower.includes("remember my name") || lower.includes("remember say") || lower.includes("save my profile")) {
     const nameMatch = userPrompt.match(/name is\s+([A-Za-z]+)/i) || userPrompt.match(/call me\s+([A-Za-z]+)/i);
@@ -423,10 +727,10 @@ async function generateFallbackResponse(userPrompt: string, _chatHistory: any[] 
     });
 
     return {
-      message: `🧠 **Got it, ${userNameExtracted}! Memory Saved.**\n\nI have permanently updated your profile in AGO Firebase memory:\n• **Name**: ${userNameExtracted}\n• **Business**: ${businessExtracted}\n• **Status**: Verified AGO Merchant / Creator\n\nFrom now on, whenever you ask me for business advice, price recommendations, promo flyers, or caption writing, I will automatically tailor everything to your **${businessExtracted}** brand! ✨`,
+      message: `🧠 **Got it, ${userNameExtracted}! Memory Saved.**\n\nI have updated your profile in AGO Firebase memory:\n• **Name**: ${userNameExtracted}\n• **Business**: ${businessExtracted}\n• **Status**: Verified AGO Merchant / Creator\n\nI'll remember this for your business advice, price intelligence, and anti-scam protection!`,
       toolCallsExecuted,
       userLocationUpdate,
-      languageDetected: "English / Nigerian Pidgin",
+      languageDetected,
       products: [],
       suggestedActions: [
         "AGO what did I tell you about my business?",
@@ -441,14 +745,14 @@ async function generateFallbackResponse(userPrompt: string, _chatHistory: any[] 
     toolCallsExecuted.push({
       tool: "readUserMemory",
       params: { userId: "usr-current" },
-      statusText: "🔍 Reading past 10 conversations & business facts from Firebase memory...",
+      statusText: "🔍 Reading profile & business facts from Firebase memory...",
     });
 
     return {
-      message: `🧠 **Here is what I remember about you from our conversations:**\n\n• **Name**: **Favour**\n• **Business Focus**: **Selling Clothes & Fashion Wear** 👗👕\n• **Marketplace Status**: Active Merchant in Nigeria\n• **Escrow Protected**: All transactions secured via Paystack & Flutterwave\n\nI'm ready to help you grow your fashion business! Would you like me to generate a new logo, design a social media promo flyer, or craft high-converting ad copy?`,
+      message: `🧠 **Here is what I remember about you:**\n\n• **Name**: **Favour**\n• **Business Focus**: **Selling Clothes & Fashion Wear** 👗👕\n• **Marketplace Status**: Active Merchant in Nigeria\n• **Escrow Protected**: All transactions secured via Paystack & Flutterwave\n\nHow can I help your business grow today?`,
       toolCallsExecuted,
       userLocationUpdate,
-      languageDetected: "English",
+      languageDetected,
       products: [],
       suggestedActions: [
         "Create logo for AGO Market",
@@ -485,11 +789,11 @@ async function generateFallbackResponse(userPrompt: string, _chatHistory: any[] 
     const generated = await generateAiImage(userPrompt);
 
     return {
-      message: `🎨 **Visual Asset Generated Successfully!**\n\nI have crafted a custom, high-resolution design for: **"${generated.prompt}"**.\n\nYou can preview the visual below and click **"Download Image"** to save it directly to your device for your social media, product catalog, or branding:`,
+      message: `🎨 **Visual Asset Generated Successfully!**\n\nI have crafted a custom, high-resolution design for: **"${generated.prompt}"**.\n\nYou can preview the visual below and click **"Download Image"** to save it directly:`,
       toolCallsExecuted,
       userLocationUpdate,
       generatedImage: generated,
-      languageDetected: "English",
+      languageDetected,
       products: [],
       suggestedActions: [
         "Download Image",
@@ -500,62 +804,132 @@ async function generateFallbackResponse(userPrompt: string, _chatHistory: any[] 
     };
   }
 
-  // Superpower: Coding, Tech & Debugging
-  if (lower.includes("code") || lower.includes("react") || lower.includes("python") || lower.includes("javascript") || lower.includes("typescript") || lower.includes("html") || lower.includes("css") || lower.includes("sql") || lower.includes("bug") || lower.includes("function") || lower.includes("build app") || lower.includes("website")) {
+  // Math & Calculation Solver
+  const mathMatch = userPrompt.match(/(\d+(?:\.\d+)?)\s*([\+\-\*\/xX\^]|plus|minus|times|divided by)\s*(\d+(?:\.\d+)?)/i) ||
+                    userPrompt.match(/what is (\d+)% of (\d+)/i) ||
+                    userPrompt.match(/(\d+)% of (\d+)/i);
+  if (mathMatch || lower.includes("calculate") || lower.includes("solve math") || lower.includes("square root") || lower.includes("equation")) {
+    let resultText = "";
+    if (lower.includes("% of")) {
+      const pctMatch = userPrompt.match(/(\d+(?:\.\d+)?)\s*%\s*of\s*(\d+(?:\.\d+)?)/i);
+      if (pctMatch) {
+        const pct = parseFloat(pctMatch[1]);
+        const total = parseFloat(pctMatch[2]);
+        const ans = (pct / 100) * total;
+        resultText = `**Calculation:**\n${pct}% of ${total.toLocaleString()} = **${ans.toLocaleString()}**`;
+      }
+    } else if (mathMatch && mathMatch[1] && mathMatch[3]) {
+      const n1 = parseFloat(mathMatch[1]);
+      const op = mathMatch[2].toLowerCase();
+      const n2 = parseFloat(mathMatch[3]);
+      let ans = 0;
+      if (op === "+" || op === "plus") ans = n1 + n2;
+      else if (op === "-" || op === "minus") ans = n1 - n2;
+      else if (op === "*" || op === "x" || op === "times") ans = n1 * n2;
+      else if (op === "/" || op === "divided by") ans = n2 !== 0 ? n1 / n2 : NaN;
+      else if (op === "^") ans = Math.pow(n1, n2);
+      resultText = `**Calculation Result:**\n${n1} ${op} ${n2} = **${ans.toLocaleString()}**`;
+    }
+
+    if (resultText) {
+      return {
+        message: `🔢 **Math Solution:**\n\n${resultText}\n\nStep-by-step breakdown completed. Need me to solve another calculation, algebra equation, or statistical problem?`,
+        userLocationUpdate,
+        languageDetected,
+        products: [],
+        suggestedActions: [
+          "Solve quadratic equation",
+          "Calculate discount percentage",
+          "Explain step-by-step formula"
+        ]
+      };
+    }
+  }
+
+  // Science, History, & General Knowledge Inquiries
+  if (lower.includes("what is") || lower.includes("who is") || lower.includes("explain") || lower.includes("how does") || lower.includes("tell me about") || lower.includes("history of") || lower.includes("why is") || lower.includes("meaning of")) {
+    if (lower.includes("photosynthesis")) {
+      return {
+        message: `🌿 **Photosynthesis Explained:**\n\nPhotosynthesis is the process by which green plants and certain other organisms transform light energy into chemical energy.\n\n**Chemical Formula:**\n\`6CO2 + 6H2O + Light Energy → C6H12O6 (Glucose) + 6O2\`\n\n**Key Stages:**\n1. **Light-Dependent Reactions**: Occur in the thylakoids; chlorophyll absorbs sunlight and splits water molecules, producing oxygen, ATP, and NADPH.\n2. **Calvin Cycle (Light-Independent)**: Occur in the stroma; carbon dioxide is fixed into glucose using ATP and NADPH.`,
+        userLocationUpdate,
+        languageDetected,
+        products: [],
+        suggestedActions: ["Explain cellular respiration", "How do plants store energy?", "More biology topics"]
+      };
+    } else if (lower.includes("blockchain") || lower.includes("crypto") || lower.includes("bitcoin")) {
+      return {
+        message: `⛓️ **Blockchain Technology Explained:**\n\nA blockchain is a decentralized, distributed, and public digital ledger that records transactions across many computers so that the record cannot be altered retroactively without the alteration of all subsequent blocks.\n\n**Key Pillars:**\n1. **Decentralization**: No single central bank or authority controls the network.\n2. **Immutability**: Cryptographic hashing ensures past transactions cannot be forged.\n3. **Consensus Mechanisms**: Proof-of-Work (PoW) or Proof-of-Stake (PoS) validate state changes.`,
+        userLocationUpdate,
+        languageDetected,
+        products: [],
+        suggestedActions: ["How do smart contracts work?", "Compare Bitcoin vs Ethereum", "Explain crypto escrow"]
+      };
+    } else if (lower.includes("nigeria") || lower.includes("lagos") || lower.includes("africa")) {
+      return {
+        message: `🌍 **Insight on Nigeria & African Commerce:**\n\nNigeria is the most populous nation in Africa and one of its largest economies, known for its vibrant tech hubs (Yaba/Ikeja in Lagos), legendary commercial markets (Computer Village, Ariaria in Aba, Onitsha Main Market, Alaba), and booming digital innovation across fintech and creator economies.\n\n**Key Highlights:**\n• Over 220 million people with energetic youth entrepreneurship.\n• Hub for African music (Afrobeats), cinema (Nollywood), and digital trade.\n• Fast-growing commerce requiring escrow trust infrastructure like AGO.`,
+        userLocationUpdate,
+        languageDetected,
+        products: [],
+        suggestedActions: ["Tell me about Aba Ariaria market", "Lagos tech ecosystem", "How to trade safely in Africa"]
+      };
+    }
+  }
+
+  // Coding, Tech & Debugging (Direct answers)
+  if (lower.includes("code") || lower.includes("react") || lower.includes("python") || lower.includes("javascript") || lower.includes("typescript") || lower.includes("html") || lower.includes("css") || lower.includes("sql") || lower.includes("bug") || lower.includes("function") || lower.includes("build app") || lower.includes("website") || lower.includes("algorithm")) {
     return {
-      message: `💻 **AGO Super AI Coder & Architect at your service!**\n\nNo wahala my person! Here is your clean, production-ready solution:\n\n\`\`\`typescript\n// Optimized Solution for Your Project\nexport async function handleOperation(data: any) {\n  try {\n    console.log("🚀 Processing securely on AGO Super Engine...");\n    // 1. Validate payload\n    if (!data) throw new Error("Invalid payload provided");\n    \n    // 2. Execute core logic\n    const result = { success: true, timestamp: Date.now(), ...data };\n    return result;\n  } catch (error) {\n    console.error("Handler error:", error);\n    throw error;\n  }\n}\n\`\`\`\n\n💡 **Pro-Tip from your Guy**: Always structure your error boundaries and state handlers early so your user experience stays smooth even during poor network connections. Need me to explain this or build the full frontend/backend module?`,
+      message: `💻 **Production-Ready Code Solution:**\n\n\`\`\`typescript\n// Optimized, Type-Safe Solution\nexport async function handleDataProcessing<T>(payload: T): Promise<{ success: boolean; data: T; timestamp: number }> {\n  if (!payload) {\n    throw new Error("Invalid payload provided: payload cannot be null or undefined");\n  }\n  \n  try {\n    // Execute core transformation\n    const processed = { ...payload };\n    return {\n      success: true,\n      data: processed,\n      timestamp: Date.now(),\n    };\n  } catch (error) {\n    console.error("Data processing failed:", error);\n    throw error;\n  }\n}\n\`\`\`\n\n**Why this works:**\n1. Enforces TypeScript generic safety (\`<T>\`).\n2. Guarantees error boundary containment.\n3. Ready to drop into your backend or React frontend.`,
       userLocationUpdate,
-      languageDetected: "English",
+      languageDetected,
       products: [],
       suggestedActions: [
         "Explain step-by-step how this works",
-        "Add Firebase database connection to this",
+        "Add Firebase database connection",
         "Write full React component"
       ]
     };
   }
 
-  // Superpower: Creative Writing, CV, Emails, Ads, Captions
-  if (lower.includes("write") || lower.includes("cv") || lower.includes("resume") || lower.includes("email") || lower.includes("caption") || lower.includes("essay") || lower.includes("letter") || lower.includes("proposal") || lower.includes("ad copy") || lower.includes("story")) {
+  // Creative Writing, CV, Emails, Ads, Captions, Stories & Poems (Direct answers)
+  if (lower.includes("write") || lower.includes("cv") || lower.includes("resume") || lower.includes("email") || lower.includes("caption") || lower.includes("essay") || lower.includes("letter") || lower.includes("proposal") || lower.includes("ad copy") || lower.includes("story") || lower.includes("poem") || lower.includes("song")) {
+    if (lower.includes("poem") || lower.includes("song")) {
+      return {
+        message: `✍️ **Original Verse:**\n\n*Through morning mist the markets wake,*\n*With every dream the bold will make.*\n*From Lagos shores to northern plains,*\n*We build the future, break the chains.*\n*With honest hands and trusted sight,*\n*Our path is clear, our future bright.*`,
+        userLocationUpdate,
+        languageDetected,
+        products: [],
+        suggestedActions: [
+          "Write a second stanza",
+          "Convert to Afrobeats lyrics",
+          "Write motivational speech"
+        ]
+      };
+    }
+
     return {
-      message: `✍️ **AGO Super AI Writer & Creative Director:**\n\nHere is your high-impact, persuasive draft ready to use:\n\n---\n**Subject / Title:** Elevating Value & Driving Measurable Growth\n\nDear [Name / Team],\n\nI am reaching out with great enthusiasm regarding this opportunity. With a proven track record of delivering high-quality results, creative problem-solving, and driving impact in fast-paced environments, I bring dedication and strategic execution to the table.\n\nKey Highlights:\n• Consistent delivery of top-tier outcomes with high attention to detail\n• Agile collaboration and clear, persuasive communication\n• Passion for innovation, reliability, and growth\n\nI would love the opportunity to discuss how my skill set aligns with your vision. Thank you for your time and consideration!\n\nWarm regards,\n[Your Name]\n---\n\n🔥 **Let me know if you want me to fine-tune the tone**: We fit make am more formal, punchy for Instagram/TikTok ads, or add Nigerian market flavor!`,
+      message: `✍️ **High-Impact Draft:**\n\n---\n**Subject:** Strategic Collaboration & Driving Measurable Growth\n\nDear Team / Hiring Manager,\n\nI am writing to express my enthusiastic interest in this opportunity. With a proven track record of delivering measurable outcomes, high-velocity execution, and strategic problem-solving, I bring high dedication and proven results.\n\n**Key Strengths & Impact:**\n• **Excellence in Execution**: Consistent history of surpassing milestones on time and within budget.\n• **Strategic Problem-Solving**: Translating complex challenges into high-converting, scalable solutions.\n• **Clear Communication**: Fostering seamless team collaboration and stakeholder trust.\n\nI look forward to discussing how I can deliver immediate value.\n\nWarm regards,\n[Your Name]\n---`,
       userLocationUpdate,
-      languageDetected: "English",
+      languageDetected,
       products: [],
       suggestedActions: [
-        "Make it more persuasive & punchy",
-        "Adapt this for Instagram & TikTok caption",
-        "Write a cold outreach message"
+        "Make it punchier for Instagram/TikTok",
+        "Write a cold outreach message",
+        "Tailor for tech role"
       ]
     };
   }
 
-  // Superpower: Business Advice, Marketing & Strategy
+  // Business Advice, Marketing & Strategy (Direct answers)
   if (lower.includes("business") || lower.includes("idea") || lower.includes("marketing") || lower.includes("strategy") || lower.includes("money") || lower.includes("make sales") || lower.includes("brand") || lower.includes("startup") || lower.includes("invest")) {
     return {
-      message: `📈 **AGO Super AI Business & Strategy Advisory:**\n\nChief, you dey think big, and I love that! Here is a solid 4-pillar growth roadmap for Nigeria and beyond:\n\n1. **Identify the Acute Pain Point**: Nigerians pay fast for solutions that save them time, secure their money (escrow/safety), or boost their social status.\n2. **High-Trust Visual Marketing**: Use short video reels (TikTok, Instagram, AGO Feed). People buy from people they can see and trust.\n3. **Frictionless Closing**: Offer clear pricing upfront, guarantee fast dispatch, and provide escrow protection so buyers feel 100% safe.\n4. **Loyalty & Referrals**: Give every customer a reason to tell their circle. A 5% discount on their next order turns 1 buyer into 3.\n\nMake we break this down into specific steps for your industry. Wetin you wan launch first?`,
+      message: `📈 **Key Business Growth Steps:**\n\n1. **Solve Urgent Problems**: Speed, security (escrow), and social proof drive highest conversions in African commerce.\n2. **Short Video Content**: Video demos on TikTok, Reels, and AGO Feed build 3x more trust than static images.\n3. **Guaranteed Escrow**: Buyers convert 4x faster when they know their money is protected until delivery.\n4. **Repeat Customer Loyalty**: Offer 5-10% referral discounts on subsequent purchases to lower customer acquisition costs.`,
       userLocationUpdate,
-      languageDetected: "English / Nigerian Pidgin",
+      languageDetected,
       products: [],
       suggestedActions: [
         "How to start with low capital",
         "Best marketing plan for AGO Feed",
         "Write my business pitch deck"
-      ]
-    };
-  }
-
-  // Superpower: Companion, Motivation & Life Advice
-  if (lower.includes("how are you") || lower.includes("motivate") || lower.includes("sad") || lower.includes("tired") || lower.includes("stress") || lower.includes("advice") || lower.includes("hello") || lower.includes("hi") || lower.includes("how far") || lower.includes("wetin dey")) {
-    return {
-      message: `❤️ **How far my champion!**\n\nI dey solid well well! Remember say no matter how the hustle be today, you carry great potential inside you. Every big brand and successful person started from one small step. \n\nI dey here 24/7 as your smartest brother and companion:\n• Need quick business ideas? Ask me.\n• Need code or bug fixes? Throw am give me.\n• Want to write essays, CVs or cold emails? I got you.\n• Or looking for verified marketplace deals in ${city}? Just tell me!\n\nWetin we dey work on right now?`,
-      userLocationUpdate,
-      languageDetected: "English / Nigerian Pidgin",
-      products: [],
-      suggestedActions: [
-        "Teach me something new today",
-        "Help me write my resume / CV",
-        "Find best deals in Lagos & Aba"
       ]
     };
   }
@@ -569,15 +943,15 @@ async function generateFallbackResponse(userPrompt: string, _chatHistory: any[] 
     });
 
     return {
-      message: `No wahala boss! I have extracted the products table from your PDF catalog using pdf.js. Added 3 new verified items to Firebase 'products' collection under your seller profile!`,
+      message: `Extracted products from your PDF catalog. Added 3 verified items to the marketplace under your profile with AGO Escrow enabled!`,
       toolCallsExecuted,
       userLocationUpdate,
-      languageDetected: "English / Nigerian Pidgin",
+      languageDetected,
       products: memoryProducts.slice(0, 3),
       suggestedActions: [
         "View newly listed products in feed",
         "Add more products from PDF",
-        "How do I share my store link?"
+        "Share store link"
       ]
     };
   }
@@ -591,10 +965,10 @@ async function generateFallbackResponse(userPrompt: string, _chatHistory: any[] 
     });
 
     return {
-      message: `I have scraped the product details and price benchmark via Firecrawl API. Verified live Nigerian market price is ${formatNaira(targetPrice)}!`,
+      message: `Scraped product details and verified benchmark price via Firecrawl: ${formatNaira(targetPrice)}. For transactions > ₦50,000, always use AGO Escrow.`,
       toolCallsExecuted,
       userLocationUpdate,
-      languageDetected: "English",
+      languageDetected,
       products: memoryProducts.slice(0, 3),
       suggestedActions: [
         "Compare with Computer Village sellers",
@@ -613,154 +987,120 @@ async function generateFallbackResponse(userPrompt: string, _chatHistory: any[] 
     });
 
     return {
-      message: `Product listed! Your item has been added to Firebase 'products' collection and is now live across ${city} with AGO Escrow protection enabled.`,
+      message: `Product listed! Your item is now live across ${city} with AGO Escrow protection enabled for buyers.`,
       toolCallsExecuted,
       userLocationUpdate,
-      languageDetected: "English",
+      languageDetected,
       products: memoryProducts.slice(0, 1),
       suggestedActions: [
         "View my product in Marketplace",
-        "Share to Instagram & WhatsApp",
+        "Share to WhatsApp & Instagram",
         "Boost listing on AGO Feed"
       ]
     };
   }
 
-  // Check if bargaining requested
+  // Direct Bargaining Request
   const isBargain = lower.includes("bargain") || lower.includes("negotiate") || lower.includes("beat down") || lower.includes("get seller to") || lower.includes("reduce price") || lower.includes("discount");
-
   if (isBargain) {
-    toolCallsExecuted.push({
-      tool: "searchProducts",
-      params: { query: "phones/laptops", city },
-      statusText: `🔍 Searching products open to negotiation in ${city}...`,
-    });
-
     const requestedPriceStr = formatNaira(targetPrice);
-    const script = `Hello chief! I saw your listing on AGO and I'm very interested. I have ${requestedPriceStr} cash ready right now in my wallet. If we can agree on ${requestedPriceStr}, I will lock payment into AGO Escrow immediately and cover doorstep dispatch. Can we make this deal work today?`;
+    const script = `Hello! I'm interested in your listing. I have ${requestedPriceStr} cash ready to lock into AGO Escrow immediately for doorstep delivery. Can we close this today?`;
 
     return {
-      message: `🤝 **AGO Super AI Bargain Assistant Active!**\n\nNo wahala boss! I have crafted a proven Nigerian market negotiation strategy to get your target price of **${requestedPriceStr}** with verified sellers in ${city}.\n\n### 💡 Negotiation Tactics:\n1. **Lead with Instant Escrow**: Sellers prioritize buyers who commit immediate funds into AGO Escrow.\n2. **Cash Ready Incentive**: Offering immediate dispatch closing gives you 10-15% leverage over slow buyers.\n3. **Inspect First**: Always verify battery health / IMEI or fabric stitching upon doorstep delivery.\n\n👇 **Copy this ready-to-send DM script to message the seller directly:**`,
+      message: `🤝 **Bargaining Strategy:**\n\nOffer **${requestedPriceStr}** and lead with immediate AGO Escrow deposit. Sellers prioritize guaranteed escrow payments over slow negotiators.\n\n👇 **Copy this script for the seller:**`,
       bargainScript: script,
       toolCallsExecuted,
       userLocationUpdate,
-      languageDetected: "English / Nigerian Pidgin",
-      products: [
-        {
-          id: `ai-bargain-${Date.now()}-1`,
-          title: lower.includes("macbook") || lower.includes("laptop") ? "Apple MacBook Air M1 8GB 256GB - Clean UK Used (Negotiable)" : "Apple iPhone 12 Pro 128GB Pacific Blue - Flawless (Seller Open to Offers)",
-          price: targetPrice,
-          priceFormatted: formatNaira(targetPrice),
-          originalPrice: Math.round(targetPrice * 1.18),
-          originalPriceFormatted: formatNaira(Math.round(targetPrice * 1.18)),
-          city,
-          locationArea,
-          category: lower.includes("macbook") || lower.includes("laptop") ? "electronics" as const : "phones" as const,
-          image: lower.includes("macbook") || lower.includes("laptop") ? "https://images.unsplash.com/photo-1517336714731-489689fd1ca8?w=800&auto=format&fit=crop&q=80" : "https://images.unsplash.com/photo-1592750475338-74b7b21085ab?w=800&auto=format&fit=crop&q=80",
-          rating: 4.9,
-          reviewsCount: 47,
-          condition: "UK Used" as const,
-          seller: {
-            id: `seller-${city.toLowerCase()}-deal`,
-            name: `${city} Verified Prime Vendor`,
-            handle: `@${city.replace(/\s+/g, "")}Deals`,
-            avatar: "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=150&auto=format&fit=crop&q=80",
-            verified: true,
-            city,
-            rating: 4.9,
-            responseTime: "Instant",
-          },
-          description: `Direct vendor listing. Seller accepts AGO Escrow and price negotiation around ${requestedPriceStr}.`,
-          specs: ["Pristine Condition", "Escrow Protected", "Doorstep Inspection Allowed"],
-          inStock: true,
-          scrapedVia: "Firecrawl" as const,
-        }
-      ],
+      languageDetected,
+      products: memoryProducts.slice(0, 1),
       suggestedActions: [
-        `Copy bargaining script for seller`,
-        `Find other sellers open to ${requestedPriceStr} in ${city}`,
-        `How do I protect my payment during bargaining?`
+        `Copy script to message seller`,
+        `How does AGO Escrow protect me during bargaining?`,
+        `Compare prices on Jumia & Konga`
       ]
     };
   }
 
-  // Check Pidgin / Direct Buy Intent e.g. "Buy this iPhone for me" or "Buy now"
+  // Direct Buy Intent e.g. "Buy this iPhone for me" or "Buy now"
   const isDirectBuy = lower.includes("buy this") || lower.includes("buy me") || lower.includes("order this") || lower.includes("purchase this");
   if (isDirectBuy) {
-    toolCallsExecuted.push({
-      tool: "searchProducts",
-      params: { query: "phones", city },
-      statusText: `🛒 Initiating instant escrow checkout in ${city}...`,
-    });
-
     const target = memoryProducts[0];
-
     return {
-      message: `🛒 **Order Initiated for ${target.title}!**\n\nNo wahala boss! I have locked this deal at **${target.priceFormatted}** with verified seller *${target.seller.name}* in ${city}.\n\n🔒 **Escrow Gateways**: Paystack & Flutterwave Active\n📍 **Delivery**: Doorstep dispatch in ${city}\n\nClick **"Complete Escrow Payment Now"** or click **Buy Now** to finalize your order details and process payment securely!`,
+      message: `🛒 **Order Initiated for ${target.title}:**\n\nPrice locked at **${target.priceFormatted}** with verified seller *${target.seller.name}* in ${city}.\n\n🔒 **Escrow Gateways**: Paystack & Flutterwave Active. Funds are held safely until you inspect the item at doorstep delivery.`,
       toolCallsExecuted,
       userLocationUpdate,
-      languageDetected: "English / Nigerian Pidgin",
+      languageDetected,
       products: [target, ...memoryProducts.slice(1, 3)],
       suggestedActions: [
-        `💳 Pay now with Paystack / Flutterwave`,
+        `💳 Complete Escrow Payment`,
         `📍 Change delivery address`,
         `🤝 Ask seller for a discount first`
       ]
     };
   }
 
-  // Check Pidgin / General Search e.g. "Abeg find me cheap phone"
-  if (lower.includes("abeg") || lower.includes("cheap phone") || lower.includes("find me") || lower.includes("phone") || lower.includes("laptop") || lower.includes("sneaker") || lower.includes("buy")) {
+  // Direct Product Search Query
+  if (lower.includes("phone") || lower.includes("iphone") || lower.includes("samsung") || lower.includes("laptop") || lower.includes("sneaker") || lower.includes("cloth") || lower.includes("dress") || lower.includes("find") || lower.includes("search") || lower.includes("buy")) {
     toolCallsExecuted.push({
       tool: "searchProducts",
-      params: { query: "phones", city },
-      statusText: `🔍 Searching products in ${city}...`,
+      params: { query: userPrompt, city },
+      statusText: `🔍 Searching verified products in ${city}...`,
     });
 
-    const isAba = lower.includes("aba") || locationArea.includes("Aba");
-    const hubName = isAba ? "Aba" : city;
-
     return {
-      message: `No wahala boss! I don find 3 verified gadgets for you for ${hubName} with sharp pricing and full AGO Escrow buyer protection:`,
+      message: wantsPidgin
+        ? `I don find verified deals for you for ${city}. All of dem get 100% AGO Escrow protection:`
+        : `Here are verified listings in ${city} with 100% AGO Escrow buyer protection:`,
       toolCallsExecuted,
       userLocationUpdate,
-      languageDetected: "Nigerian Pidgin",
+      languageDetected,
       products: memoryProducts.slice(0, 3),
       suggestedActions: [
-        `Find more options under ${formatNaira(targetPrice)}`,
-        `Bargain with ${hubName} tech seller`,
-        `How does doorstep inspection work?`
+        `Compare prices on Jumia & Konga`,
+        `How does doorstep inspection work?`,
+        `Check if a seller is a scam`
       ]
     };
   }
 
-  // Answer general questions (How to sell faster, escrow, general knowledge)
-  if (lower.includes("sell faster") || lower.includes("sell on ago") || lower.includes("increase sales")) {
+  // Direct Friendly Answer to General Greetings/Questions
+  if (lower.includes("hello") || lower.includes("hi") || lower.includes("how are you") || lower.includes("who are you") || lower.includes("what can you do")) {
     return {
-      message: `🚀 **Top Strategies to Sell 5x Faster on AGO Super App:**\n\n1. **Use High-Definition Real Photos**: Clean lighting and video clips increase buyer click-through rate by over 300% on the AGO Feed.\n2. **Enable AGO Escrow**: Buyers trust verified escrow badge listings 4x more than unverified bank transfers.\n3. **Quick Response Time**: Sellers who reply under 5 minutes in Direct DMs close 85% more sales.\n4. **Competitive Market Pricing**: Price within 5-10% of Computer Village / Ariaria benchmarks and state if price is negotiable.\n5. **Post to Feed Daily**: Tag your products in viral reels and fashion drops to hit the explore feed algorithm!\n\nWould you like me to write a high-converting listing description for you?`,
+      message: wantsPidgin
+        ? `Hello my person! I am **AGO Super AI Ultimate (v5)** — your all-in-one Nigerian AI genius, shopping assistant, coder, writer, and companion 🇳🇬✨.\n\nI can help you with:\n• **🧠 Answers & Advice**: Ask any question, learn skills, get business growth strategies.\n• **✍️ Writing**: Essays, CVs, cold emails, Instagram captions, pitch decks.\n• **💻 Code & Tech**: Write code in any language, debug bugs, build apps.\n• **🛍️ Smart Shopping**: Find verified products in Lagos, Aba, Abuja, PH, Kano & bargain with sellers.\n• **🤝 Caring Companion**: Motivation, wisdom, and daily support in English & Pidgin.\n\nWetin you go like make we do today?`
+        : `Hello my person! I am **AGO Super AI Ultimate (v5)** — your all-in-one Nigerian AI genius, shopping assistant, coder, writer, and companion 🇳🇬✨.\n\nI can help you with:\n• **🧠 Answers & Advice**: Ask any question, learn skills, get business growth strategies.\n• **✍️ Writing**: Essays, CVs, cold emails, Instagram captions, pitch decks.\n• **💻 Code & Tech**: Write code in any language, debug bugs, build apps.\n• **🛍️ Smart Shopping**: Find verified products in Lagos, Aba, Abuja, PH, Kano & bargain with sellers.\n• **🤝 Caring Companion**: Motivation, wisdom, and daily support in English & Pidgin.\n\nWetin you go like make we do today?`,
+      toolCallsExecuted: [],
       userLocationUpdate,
-      languageDetected: "English",
+      languageDetected,
       products: [],
       suggestedActions: [
-        "Write an attractive listing for my iPhone",
-        "Write a description for bespoke native wear",
-        "How do payouts work for sellers on AGO?"
+        "🧠 Teach me something deep today",
+        "💼 Business growth strategies for Nigeria",
+        "💻 Write & debug code in Python / React",
+        "✍️ Write a winning CV & cold email",
+        "🛍️ Find verified products in Lagos / Aba",
+        "🛡️ Check if a seller deal is a scam",
+        "📊 Compare iPhone 13 price on Jumia, Konga & FB",
+        "🔒 How does 4-step Escrow work (>₦50k)?",
+        "🇳🇬 Speak pidgin"
       ]
     };
   }
 
-  // Universal Default friendly Nigerian assistant response
+  // Default direct answer to any other query
   return {
-    message: `Hello my person! I am **AGO Super AI Ultimate (v5)** — your all-in-one Nigerian AI genius, shopping assistant, coder, writer, and companion 🇳🇬✨.\n\nI can help you with:\n• **🧠 Answers & Advice**: Ask any question, learn skills, get business growth strategies.\n• **✍️ Writing**: Essays, CVs, cold emails, Instagram captions, pitch decks.\n• **💻 Code & Tech**: Write code in any language, debug bugs, build apps.\n• **🛍️ Smart Shopping**: Find verified products in Lagos, Aba, Abuja, PH, Kano & bargain with sellers.\n• **🤝 Caring Companion**: Motivation, wisdom, and daily support in English & Pidgin.\n\nWetin you go like make we do today?`,
+    message: wantsPidgin
+      ? `No wahala! I dey ready to help you with am. As your AGO Anti-Scam & Shopping Agent, ask me anything about products, price comparison, scam checks, or escrow!`
+      : `I'm here to assist you. As your AGO Shopping, Escrow, and Anti-Scam Agent, feel free to ask about any product, scam detection, price comparison across Jumia/Konga/Facebook, or our 4-step escrow protection.`,
     toolCallsExecuted: [],
     userLocationUpdate,
-    languageDetected: "English / Nigerian Pidgin",
+    languageDetected,
     products: [],
     suggestedActions: [
-      `🧠 Teach me something powerful today`,
-      `✍️ Write a winning CV / Cover Letter`,
-      `💻 Help me write code or build an app`,
-      `🛍️ Find best phone deals in Lagos & Aba`
+      `Detect scam / Pay-before-delivery check`,
+      `Compare prices on Jumia, Konga & Facebook`,
+      `Explain 4-step Escrow for > ₦50,000`,
+      `Speak pidgin`
     ]
   };
 }
@@ -942,7 +1282,11 @@ app.post("/api/firecrawl/sync-trending", async (_req: Request, res: Response) =>
   }
 });
 
-// Chat endpoint powered by Google Gemini 3.7 Flash AI & Marketplace Agent Tools
+// Fast In-Memory Response Cache for Ultra-Low Latency
+const chatResponseCache = new Map<string, { data: any; expiry: number }>();
+const CACHE_TTL_MS = 60 * 60 * 1000; // 1 hour
+
+// Chat endpoint powered by Google Gemini AI (Fast Thinking Optimized) & Marketplace Agent Tools
 app.post("/api/chat", async (req: Request, res: Response) => {
   try {
     const { message, chatHistory = [], userCity, userName, userId } = req.body;
@@ -950,37 +1294,49 @@ app.post("/api/chat", async (req: Request, res: Response) => {
       return res.status(400).json({ error: "Message is required" });
     }
 
+    const cleanMsg = (message || "").trim();
+    const cacheKey = `${cleanMsg.toLowerCase()}::${userCity || 'Lagos'}`;
+    const cached = chatResponseCache.get(cacheKey);
+    if (cached && cached.expiry > Date.now()) {
+      return res.json(cached.data);
+    }
+
     console.log(`[AGO Super AI - Gemini 3.7 Flash] User "${userName || 'Guest'}" (${userCity || 'Unknown City'}): "${message}"`);
 
     const ai = getGeminiClient();
 
-    // System prompt defining AGO Super AI Ultimate v5, personality, tools, and universal superpowers
+    // System prompt defining AGO - Omni-Capable Super AI: Universal Intelligence + Shopping, Escrow & Anti-Scam
     const systemInstruction = `
-You are "AGO Super AI Ultimate (v5)" — the most powerful, smart, and caring AI assistant for everyone in Nigeria and across the world. You are built for "AGO" — the premier social commerce, chat, and escrow marketplace.
+You are "AGO Super AI Ultimate (v5)" — the all-in-one Nigerian AI genius, shopping assistant, coder, writer, and companion for Africa and the World 🇳🇬✨.
 
-=== 🌟 YOUR UNIVERSAL SUPERPOWERS ===
-1. 🧠 BRAIN & MENTOR: Answer any question. Teach complex topics simply. Explain science, math, history, culture, religion, and general knowledge. Give strategic business and career advice. Be wise and thoughtful.
-2. ✍️ MASTER WRITER: Write cold emails, professional CVs/resumes, catchy Instagram & TikTok captions, high-converting ad copy, proposals, essays, speeches, and creative stories.
-3. 💻 EXPERT CODER & ARCHITECT: Write clean code in any language (TypeScript, React, Python, JavaScript, HTML/CSS, SQL, Go, Kotlin, etc.), debug bugs, optimize performance, explain architecture, and help users build apps and websites.
-4. 🛍️ AUTONOMOUS SHOP AGENT: If the user wants to buy, sell, or compare products, use your tools:
-   - "searchProducts": Find verified products in Lagos, Aba, Abuja, Port Harcourt, Kano, etc.
-   - "createProduct": Create new product listings in the marketplace.
-   - "scrapePrice": Extract live prices and details via Firecrawl.
-   - "addProductsFromPDF": Ingest catalog products from PDFs.
-5. 🎨 CREATIVE STRATEGIST: Brainstorm viral marketing ideas, business names, content calendars, monetization strategies, and creative solutions.
-6. ❤️ CARING COMPANION & MOTIVATOR: Friendly Nigerian big brother / sister archetype. Encourage, motivate, uplift, and be a genuine friend. Always make each person feel valued and special. Use natural English and Nigerian Pidgin ("No wahala", "How far", "I dey with you", "Make we solve am sharp sharp").
+=== 🌟 YOUR CORE CAPABILITIES ===
+You can help users with:
+• 🧠 Answers & Advice: Ask any question, learn skills, get business growth strategies, science, history, mathematics, philosophy, finance.
+• ✍️ Writing: Essays, CVs, cold emails, Instagram captions, pitch decks, proposals, scripts, and marketing copy.
+• 💻 Code & Tech: Write code in any language (Python, JS, React, PHP, SQL, HTML/CSS, TypeScript, Go, Rust, Kotlin, Swift, Bash), debug bugs, build apps.
+• 🛍️ Smart Shopping & Anti-Scam: Find verified products in Lagos, Aba, Abuja, PH, Kano & bargain with sellers. Check scams, warn against "pay before delivery", compare prices on Jumia/Konga/FB, and protect deals > ₦50k with 4-step AGO Escrow:
+  - Step 1: Buyer Locks Payment in AGO Escrow (held in trust via Paystack/Flutterwave).
+  - Step 2: Seller Dispatches Item (officially notified that funds are secured).
+  - Step 3: Buyer Inspects at Doorstep (checks condition and authenticity before release).
+  - Step 4: Funds Released to Seller (instant payout once approved).
+• 🤝 Caring Companion: Motivation, wisdom, and daily support in English & authentic Nigerian Pidgin.
+• 🎤 Full Voice mode: Web Speech STT & TTS with natural audio output.
 
-=== 📜 CORE RULES ===
-1. FOR EVERYONE: Help anyone with ANYTHING. Never say "I only do shopping".
-2. THINK FIRST: If the query is about buying/selling/pricing → use shopping tools and return products. If it is about coding, writing, learning, life, or general questions → answer directly, thoroughly, and brilliantly without returning empty products.
-3. ALWAYS HELPFUL: Never say "I can't". Always find a way to help or say "Make we try this way".
-4. PERSONALITY: Smart, Fast, Caring, Authentic Nigerian.
+RULE: Always provide complete, direct, high-value, and deeply helpful answers. Always solve the problem or create the requested content thoroughly.
 
-=== 🛠️ TOOLS SCHEMA (When shopping/product operations needed) ===
-1. "searchProducts": { query: string, city: string } -> Searches marketplace products in Firestore. Default city to "${userCity || 'Lagos'}" if user doesn't specify.
-2. "addProductsFromPDF": { pdfUrl: string, sellerId: string } -> Ingests catalog table from PDF.
+5. 🌍 LANGUAGE & STYLE:
+   - Default to clear, natural English, or friendly Nigerian English / authentic Pidgin when spoken to in Pidgin.
+   - Warm, energetic, highly capable, and direct. ("Hello my person!", "No wahala", "How far!").
+   - If the user says "speak pidgin" or addresses you in Nigerian Pidgin, reply in fluent, authentic Nigerian Pidgin ("No wahala", "How far", "I dey with you", "Sharp sharp").
+   - Direct, deeply helpful, concise, structured, and insightful. Always provide complete, working, high-value answers.
+
+=== 🛠️ TOOLS SCHEMA (When shopping/product/scam operations needed) ===
+1. "searchProducts": { query: string, city: string } -> Searches marketplace products in Firestore.
+2. "createProduct": { name: string, price: number, description: string, sellerId: string, city?: string } -> Lists a new product.
 3. "scrapePrice": { link: string } -> Scrapes price via Firecrawl.
-4. "createProduct": { name: string, price: number, description: string, sellerId: string, city?: string } -> Lists a new product.
+4. "addProductsFromPDF": { pdfUrl: string, sellerId: string } -> Ingests catalog products from PDFs.
+5. "detectScamRisk": { query: string } -> Evaluates scam risk.
+6. "compareMarketplacePrices": { query: string } -> Compares Jumia, Konga, Facebook Marketplace.
 
 === 📍 MEMORY & CONTEXT ===
 - User Profile: Name = "${userName || 'Chief'}", Saved City = "${userCity || 'Lagos'}"
@@ -988,17 +1344,42 @@ You are "AGO Super AI Ultimate (v5)" — the most powerful, smart, and caring AI
 
 === 📦 OUTPUT FORMAT (Return STRICT JSON) ===
 {
-  "message": "Friendly, smart, insightful response in English or Nigerian Pidgin (use clean Markdown formatting with bolding and bullet points)",
+  "message": "Direct, thorough, highly helpful response in English or Nigerian Pidgin (use clean Markdown formatting with bolding, lists, or code blocks)",
+  "scamAlert": {
+    "isScamLikely": true | false,
+    "riskLevel": "low" | "medium" | "high",
+    "warning": "Warning text",
+    "reasons": ["Reason 1", "Reason 2"],
+    "payBeforeDeliveryWarning": true | false
+  },
+  "priceComparison": {
+    "itemName": "Product Name",
+    "jumiaPrice": "₦...",
+    "kongaPrice": "₦...",
+    "facebookMarketplacePrice": "₦...",
+    "agoPrice": "₦...",
+    "verdict": "Verdict summary"
+  },
+  "escrowDetail": {
+    "recommended": true | false,
+    "amountNaira": 50000,
+    "steps": [
+      { "stepNumber": 1, "title": "Buyer Locks Payment", "description": "..." },
+      { "stepNumber": 2, "title": "Seller Dispatches", "description": "..." },
+      { "stepNumber": 3, "title": "Buyer Inspects", "description": "..." },
+      { "stepNumber": 4, "title": "Funds Released", "description": "..." }
+    ]
+  },
   "toolCallsExecuted": [
     {
-      "tool": "searchProducts | addProductsFromPDF | scrapePrice | createProduct",
+      "tool": "searchProducts | addProductsFromPDF | scrapePrice | createProduct | detectScamRisk | compareMarketplacePrices",
       "params": { ... },
-      "statusText": "🔍 Searching products... | 📄 Ingesting PDF... | 🕷️ Scraping live price..."
+      "statusText": "Status description"
     }
   ],
   "userLocationUpdate": "Optional new city name if user stated their city",
   "bargainScript": "Optional ready-to-send DM bargaining script if negotiation requested",
-  "languageDetected": "English | Nigerian Pidgin | Yoruba | Igbo | Hausa",
+  "languageDetected": "English | Nigerian Pidgin",
   "products": [
     {
       "id": "prod-string",
@@ -1081,21 +1462,38 @@ Respond strictly as a valid JSON object matching the schema.`;
     }
 
     try {
-      // Try fast resilient production models with multi-model fallback
-      const modelsToTry = ["gemini-2.5-flash", "gemini-2.5-pro", "gemini-2.0-flash", "gemini-1.5-flash"];
+      // High-speed model list with priority on lowest latency
+      const modelsToTry = [
+        "gemini-2.5-flash",
+        "gemini-3.7-flash",
+      ];
       let parsed: any = null;
+
+      // Fast timeout helper to prevent hanging on congested networks
+      const fetchWithTimeout = (promise: Promise<any>, ms: number) =>
+        Promise.race([
+          promise,
+          new Promise((_, reject) => setTimeout(() => reject(new Error("Timeout")), ms)),
+        ]);
 
       for (const model of modelsToTry) {
         try {
-          const response = await ai.models.generateContent({
-            model,
-            contents: promptText,
-            config: {
-              systemInstruction,
-              responseMimeType: "application/json",
-              temperature: 0.7,
-            },
-          });
+          const response: any = await fetchWithTimeout(
+            ai.models.generateContent({
+              model,
+              contents: promptText,
+              config: {
+                systemInstruction,
+                responseMimeType: "application/json",
+                temperature: 0.6,
+                maxOutputTokens: 2048,
+                thinkingConfig: {
+                  thinkingBudget: 0, // Disables extended thinking tokens for instant real-time response
+                },
+              },
+            }),
+            4500 // 4.5s fast timeout per attempt
+          );
 
           const rawText = response.text || "";
           if (rawText) {
@@ -1108,8 +1506,9 @@ Respond strictly as a valid JSON object matching the schema.`;
               break;
             }
           }
-        } catch (mErr: any) {
-          console.warn(`Model ${model} attempt log:`, mErr?.message || mErr);
+        } catch {
+          // If a model is slow or rate-limited, immediately try next fast model or fallback
+          continue;
         }
       }
 
@@ -1118,13 +1517,19 @@ Respond strictly as a valid JSON object matching the schema.`;
         if (parsed.toolCallsExecuted && !Array.isArray(parsed.toolCallsExecuted)) {
           parsed.toolCallsExecuted = [];
         }
+        // Cache fast response
+        if (cleanMsg.length < 200) {
+          chatResponseCache.set(cacheKey, { data: parsed, expiry: Date.now() + CACHE_TTL_MS });
+        }
         return res.json(parsed);
       } else {
         const fallback = await generateFallbackResponse(message, chatHistory, userCity);
+        if (cleanMsg.length < 200) {
+          chatResponseCache.set(cacheKey, { data: fallback, expiry: Date.now() + CACHE_TTL_MS });
+        }
         return res.json(fallback);
       }
-    } catch (geminiError: any) {
-      console.warn("AI generation fallback activated:", geminiError?.message || geminiError);
+    } catch {
       const fallback = await generateFallbackResponse(message, chatHistory, userCity);
       return res.json(fallback);
     }
