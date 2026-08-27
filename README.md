@@ -45,7 +45,7 @@ https://ng-social-marketplace-5197.ai.studio
 3. Escrow: Hold payment safely until delivery is confirmed
 
 ## Built With
-Gemini 2.5 Flash, Node.js, Firebase, AI Studio
+Gemini 3.7 Flash, Node.js, Firebase, AI Studio
 
 ## Shipaton 2025
 Theme: Start Making Money
