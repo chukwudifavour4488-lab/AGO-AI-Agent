@@ -37,7 +37,7 @@ Google Gemini 3.7
 AGO protects people in Africa from online scams and helps them save money.
 
 ## Live Demo
-https://ng-social-marketplace-5197.ai.studio
+https://remix-remix-ago-lite-ai-shopping-social-marketpla-7468.ai.studio/
 
 ## How to Use
 1. Scam Scan: Paste any seller link or WhatsApp number
