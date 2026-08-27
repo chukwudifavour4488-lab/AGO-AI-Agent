@@ -31,3 +31,22 @@ If 1000 people use AGO and save ₦5,000 each, that's ₦5,000,000 saved monthly
 
 ## Built with 
 Google Gemini 3.7
+# AGO - AI Anti-Scam & Shopping Agent for Africa
+
+## What is AGO
+AGO protects people in Africa from online scams and helps them save money.
+
+## Live Demo
+https://ng-social-marketplace-5197.ai.studio
+
+## How to Use
+1. Scam Scan: Paste any seller link or WhatsApp number
+2. Price Compare: Paste product name to see cheapest price
+3. Escrow: Hold payment safely until delivery is confirmed
+
+## Built With
+Gemini 2.5 Flash, Node.js, Firebase, AI Studio
+
+## Shipaton 2025
+Theme: Start Making Money
+Developer: Favour | Aba, Nigeria
