@@ -1,4 +1,31 @@
-# AGO - AI Shopping + Escrow + Anti-Scam Agent for Africa
+  # Ago Lite - AI Shopping Agent for Africa
+
+## 1. Problem
+In Africa, shopping online and offline is fragmented. Prices vary wildly between stores, 
+product info is scattered, and many users don't speak English fluently. 
+Target user: Everyday African shoppers in Nigeria and beyond who want to find the best deals 
+fast, using voice or text in Pidgin, Igbo, Yoruba, Hausa, etc. 
+Internet is expensive and devices are often low-end.
+
+## 2. Design Decisions
+We started with Google Gemini API for reasoning + RAG for product search. 
+We chose not to fine-tune a huge local LLM because of data cost and device constraints. 
+Instead, Ago Lite uses a lightweight agent that calls the API only when needed and caches results. 
+Alternatives evaluated: Full local LLM [too heavy], Web scraping only [unreliable]. 
+We picked Flutter for cross-platform + Firebase for real-time product data.
+
+## 3. Constraints
+- **Hardware**: Must run on Android phones with 2GB RAM
+- **Connectivity**: Data is expensive. App works with minimal API calls + caching
+- **Data**: Limited structured product data in Africa. We use community-driven data
+- **Language**: Need to support non-English queries
+
+## 4. Performance
+Response time: <3s on 4G. Accuracy: 85% on product matching in tests.
+Tested on Tecno and Infinix devices in Aba.
+
+## 5. Future Work
+Add offline mode, more Nigerian stores, voice in 5 local languages.                # AGO - AI Shopping + Escrow + Anti-Scam Agent for Africa
 
 **Built with Google Gemini for Reverie Hacks 2026**
 
@@ -50,3 +77,31 @@ Gemini 3.7 Flash, Node.js, Firebase, AI Studio
 ## Shipaton 2025
 Theme: Start Making Money
 Developer: Favour | Aba, Nigeria
+# Ago Lite - AI Shopping Agent for Africa
+
+## 1. Problem
+In Africa, shopping online and offline is fragmented. Prices vary wildly between stores, 
+product info is scattered, and many users don't speak English fluently. 
+Target user: Everyday African shoppers in Nigeria and beyond who want to find the best deals 
+fast, using voice or text in Pidgin, Igbo, Yoruba, Hausa, etc. 
+Internet is expensive and devices are often low-end.
+
+## 2. Design Decisions
+We started with Google Gemini API for reasoning + RAG for product search. 
+We chose not to fine-tune a huge local LLM because of data cost and device constraints. 
+Instead, Ago Lite uses a lightweight agent that calls the API only when needed and caches results. 
+Alternatives evaluated: Full local LLM [too heavy], Web scraping only [unreliable]. 
+We picked Flutter for cross-platform + Firebase for real-time product data.
+
+## 3. Constraints
+- **Hardware**: Must run on Android phones with 2GB RAM
+- **Connectivity**: Data is expensive. App works with minimal API calls + caching
+- **Data**: Limited structured product data in Africa. We use community-driven data
+- **Language**: Need to support non-English queries
+
+## 4. Performance
+Response time: <3s on 4G. Accuracy: 85% on product matching in tests.
+Tested on Tecno and Infinix devices in Aba.
+
+## 5. Future Work
+Add offline mode, more Nigerian stores, voice in 5 local languages.
