@@ -1,8 +1,37 @@
 {
-  "name": "Ago Lite - AI Shopping & Social Marketplace",
-  "description": "Africa's social commerce, chat, and escrow marketplace super app powered by Google Gemini AI.",
-  "requestFramePermissions": ["microphone", "camera"],
-  "majorCapabilities": [
-    "MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"
-  ]
+  "team_id": "ago-lite-team",
+  "domain": "shopping_assistants",
+  "language_scope": ["en", "ig", "yo", "ha", "pcm"],
+  "african_alpha_claim": true,
+  "budget_laptop_claim": true,
+  "submitter": {
+    "name": "Chukwudi Favour",
+    "email": "chukwudifavour2277@gmail.com",
+    "github_handle": "chukwudifavour4488-lab"
+  },
+  "cross_disciplinary_pairing": {
+    "discipline": "commerce",
+    "load_bearing": true,
+    "description": "Ago Lite helps African shoppers find products, compare prices, and make buying decisions using voice and text in local languages. It works offline-first to save data costs."
+  },
+  "test_prompts": [
+    {
+      "prompt_id": "tp_001",
+      "prompt": "Find me the cheapest 32 inch smart TV in Aba. Compare prices from Jumia and Konga."
+    },
+    {
+      "prompt_id": "tp_002",
+      "prompt": "Nye m ndụmọdụ maka ekwentị kacha mma n'okpuru 100k naira. Kwuo ya n'Igbo."
+    }
+  ],
+  "model": {
+    "name": "gemini-3.7-flash",
+    "runtime": "google_gemini_api",
+    "quantization": "api",
+    "parameters_estimate": "N/A",
+    "packaging": "api_key"
+  },
+  "_runtime": {
+    "model_path": "model/"
+  }
 }
