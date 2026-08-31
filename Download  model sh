@@ -1,0 +1,3 @@
+    #!/bin/bash
+    mkdir -p model
+    echo "Ago Lite uses Google Gemini API. No local model to download."
