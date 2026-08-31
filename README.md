@@ -1,4 +1,4 @@
-  # Ago Lite - AI Shopping Agent for Africa
+ # Ago Lite - AI Shopping Agent for Africa
 
 ## 1. Problem
 In Africa, shopping online and offline is fragmented. Prices vary wildly between stores, 
